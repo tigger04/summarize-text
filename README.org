@@ -1,0 +1,113 @@
+#+TITLE: Summarize Text
+#+AUTHOR: Your Name
+#+DATE: 2025-08-23
+#+DESCRIPTION: A bash script to summarize text using various AI APIs
+#+KEYWORDS: bash, AI, summarization, ollama, openai, claude
+
+A bash script that reads text from STDIN and generates summaries using Ollama (local), OpenAI, or Claude APIs, outputting to STDOUT.
+I wrote this for use in other scripts.
+
+* Quick Start
+** Dependencies
+- At least one of
+  - Ollama installed with Mistral
+  - An API key for OpenAI or Claude
+- curl
+- jq
+
+** Install (macOS)
+
+#+BEGIN_SRC bash
+brew install curl jq
+brew install --cask ollama
+brew services start ollama
+ollama pull mistral
+#+END_SRC
+
+** Install (Linux - Debian/Ubuntu)
+
+#+BEGIN_SRC bash
+sudo apt update
+sudo apt install curl jq
+#+END_SRC
+
+- [[https://ollama.com/download/linux][Follow Ollama install instructions here]]
+
+then
+#+BEGIN_SRC bash
+ollama pull mistral
+ollama serve
+#+END_SRC
+
+* Usage
+#+BEGIN_SRC bash
+# Summarize with Ollama (local) - this is the default
+echo "Your long text here..." | ./summarize-text
+
+# Or with OpenAI/Claude
+echo "Your text" | ./summarize-text --openai
+echo "Your text" | ./summarize-text --claude
+#+END_SRC
+
+** Examples
+
+*** Summarize a log file
+#+BEGIN_SRC bash
+tail -500 /var/log/system.log | ./summarize-text
+#+END_SRC
+
+*** Summarize git commit messages
+#+BEGIN_SRC bash
+git log --oneline -10 | ./summarize-text
+#+END_SRC
+
+*** Summarize a web page
+#+BEGIN_SRC bash
+curl -s https://news.ycombinator.com | html2text | ./summarize-text
+#+END_SRC
+
+* Configuration
+
+** Ollama Setup
+See Quickstart above
+
+** OpenAI Setup
+1. Get your API key from https://platform.openai.com/
+2. Create the key file:
+#+BEGIN_SRC bash
+echo 'export OPENAI_API_KEY="your-api-key-here"' > ~/.ssh/.openai-api-key.sh
+chmod 600 ~/.ssh/.openaikey-tigger04.sh
+#+END_SRC
+
+Example =~/.ssh/.openai-api-key.sh= file:
+#+BEGIN_SRC bash
+export OPENAI_API_KEY="sk-1234567890abcdef1234567890abcdef1234567890abcdef"
+#+END_SRC
+
+** Claude Setup
+1. Install Claude CLI: https://github.com/anthropics/claude-cli
+2. Set up your API key:
+#+BEGIN_SRC bash
+echo 'export CLAUDE_API_KEY_NAME="your-api-key-name"' > ~/.ssh/.claude-api-key.sh
+echo 'export CLAUDE_API_KEY="your-api-key"' >> ~/.ssh/.claude-api-key.sh
+chmod 600 ~/.ssh/.claude-api-key.sh
+#+END_SRC
+
+Example =~/.ssh/.claude-api-key.sh= file:
+#+BEGIN_SRC bash
+#!/bin/bash
+export CLAUDE_API_KEY_NAME="my-claude-key"
+export CLAUDE_API_KEY="sk-ant-12340000000000000000000000000000000000000000000000000000000000000"
+#+END_SRC
+
+* License
+
+MIT
+
+* Changelog
+
+** v1.0.0 - 2025-08-23
+- Initial release
+- Bash 3.2+ compatibility
+- Support for Ollama, OpenAI, and Claude APIs
+- STDIN text processing

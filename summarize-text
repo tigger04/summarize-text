@@ -56,7 +56,7 @@ ollama_summarize() {
 
 openai_summarize() {
    info "Summarizing text with OpenAI"
-   source ~/.ssh/.openaikey-tigger04.sh
+   source ~/.ssh/.openai-api-key.sh
 
    curl https://api.openai.com/v1/chat/completions \
       -s \
