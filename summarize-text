@@ -8,13 +8,17 @@ cmd_base=$(basename "$0")
 
 # Simple info function for logging
 info() {
-   echo "ℹ️ $*" >&2
+   echo "🔷️🔷️🔷️ $* 🔷️🔷️🔷️" >&2
 }
 
 display_help_text_and_die() {
    cat - <<EOM
 USAGE:
    some_command | $cmd_base [OPTION]
+   - or -
+   $cmd_base [OPTION] FILE
+   - or -
+   $cmd_base [OPTION] URL
 WTF:
    Summarize the text from STDIN
 OPTIONS:
@@ -36,22 +40,10 @@ if [ "${BASH_VERSINFO[0]}" -lt 3 ] || ([ "${BASH_VERSINFO[0]}" -eq 3 ] && [ "${B
    exit 1
 fi
 
-# Read input text into an array (bash 3.2 compatible)
-input_text=()
-while IFS= read -r line; do
-   input_text+=("$line")
-done
-
-# Build prompt string
-prompt="Please summarize the following text:"
-for line in "${input_text[@]}"; do
-   prompt="$prompt"$'\n'"$line"
-done
-
 ollama_summarize() {
    info "Summarizing text with ollama"
    # brew services start ollama # just in case it's not already running
-   ollama run mistral "$prompt"
+   ollama run "$ollama_model" "$prompt"
 }
 
 openai_summarize() {
@@ -81,20 +73,60 @@ claude_summarize() {
    claude "$prompt"
 }
 
-case $1 in
--l | --ollama)
-   ollama_summarize
+active_function=ollama_summarize
+ollama_model=mistral
+source=STDIN
+source_identifier=""
+
+while [ $# -gt 0 ]; do
+   case $1 in
+   -l* | --ollama*)
+      active_function="ollama"
+      if [ -n ${1#*=} ]; then
+         ollama_model="${1#*=}"
+      fi
+      ;;
+   -o | --openai)
+      active_function=openai_summarize
+      ;;
+   -c | --claude)
+      active_function=claude_summarize
+      ;;
+   http://* | https://*)
+      source=URL
+      source_identifier="$1"
+      ;;
+   *)
+      source=FILE
+      source_identifier="$1"
+      ;;
+   esac
+   shift
+done
+
+construct_prompt() {
+   prompt="summarize the following text:"
+   prompt+=$'\n'
+   while ifs= read -r line; do
+      prompt+=$'\n'"$line"
+   done
+}
+
+case "$source" in
+STDIN)
+   construct_prompt
+   $active_function
    ;;
--o | --openai)
-   openai_summarize
+URL)
+   construct_prompt < <(curl -s "$source_identifier" | html2text)
+   $active_function
    ;;
--c | --claude)
-   claude_summarize
-   ;;
--*)
-   display_help_text_and_die
+FILE)
+   construct_prompt <"$source_identifier"
+   $active_function
    ;;
 *)
-   ollama_summarize # default
+   echo "Unknown source type: $source"
+   exit 1
    ;;
 esac

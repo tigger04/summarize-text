@@ -4,21 +4,21 @@
 #+DESCRIPTION: A bash script to summarize text using various AI APIs
 #+KEYWORDS: bash, AI, summarization, ollama, openai, claude
 
-A bash script that reads text from STDIN and generates summaries using Ollama (local), OpenAI, or Claude APIs, outputting to STDOUT.
-I wrote this for use in other scripts.
+A bash script that reads text from STDIN, files, or URLs and generates summaries using Ollama (local), OpenAI, or Claude APIs.
 
 * Quick Start
 ** Dependencies
 - At least one of
-  - Ollama installed with Mistral
+  - Ollama installed with Mistral (or other models)
   - An API key for OpenAI or Claude
 - curl
 - jq
+- html2text (for URL processing)
 
 ** Install (macOS)
 
 #+BEGIN_SRC bash
-brew install curl jq
+brew install curl jq html2text
 brew install --cask ollama
 brew services start ollama
 ollama pull mistral
@@ -28,7 +28,7 @@ ollama pull mistral
 
 #+BEGIN_SRC bash
 sudo apt update
-sudo apt install curl jq
+sudo apt install curl jq html2text
 #+END_SRC
 
 - [[https://ollama.com/download/linux][Follow Ollama install instructions here]]
@@ -40,13 +40,26 @@ ollama serve
 #+END_SRC
 
 * Usage
+
+The script accepts input from three sources: STDIN (pipe), files, or URLs.
+
 #+BEGIN_SRC bash
-# Summarize with Ollama (local) - this is the default
+# From STDIN (pipe) - default uses Ollama with Mistral
 echo "Your long text here..." | ./summarize-text
 
-# Or with OpenAI/Claude
+# From a file
+./summarize-text document.txt
+
+# From a URL (automatically downloads and converts HTML to text)
+./summarize-text https://example.com/article.html
+
+# Use different AI backends
 echo "Your text" | ./summarize-text --openai
 echo "Your text" | ./summarize-text --claude
+
+# Use different Ollama models
+echo "Your text" | ./summarize-text --ollama=llama2
+echo "Your text" | ./summarize-text -l=phi
 #+END_SRC
 
 ** Examples
@@ -58,28 +71,38 @@ tail -500 /var/log/system.log | ./summarize-text
 
 *** Summarize git commit messages
 #+BEGIN_SRC bash
-git log --oneline -10 | ./summarize-text
+git log --oneline -10 | ./summarize-text --openai
 #+END_SRC
 
 *** Summarize a web page
 #+BEGIN_SRC bash
-curl -s https://news.ycombinator.com | html2text | ./summarize-text
+./summarize-text https://news.ycombinator.com --claude
 #+END_SRC
 
 * Configuration
 
 ** Ollama Setup
-See Quickstart above
+1. Install Ollama (see Quick Start above)
+2. Pull additional models if desired:
+#+BEGIN_SRC bash
+# Default model (already pulled in quick start)
+ollama pull mistral
+
+# Other popular models
+ollama pull llama2
+ollama pull phi
+ollama pull codellama
+#+END_SRC
 
 ** OpenAI Setup
 1. Get your API key from https://platform.openai.com/
 2. Create the key file:
 #+BEGIN_SRC bash
 echo 'export OPENAI_API_KEY="your-api-key-here"' > ~/.ssh/.openai-api-key.sh
-chmod 600 ~/.ssh/.openaikey-tigger04.sh
+chmod 600 ~/.ssh/.openai-api-key.sh
 #+END_SRC
 
-Example =~/.ssh/.openai-api-key.sh= file:
+Example =.openai-api-key.sh= file:
 #+BEGIN_SRC bash
 export OPENAI_API_KEY="sk-1234567890abcdef1234567890abcdef1234567890abcdef"
 #+END_SRC
@@ -93,7 +116,7 @@ echo 'export CLAUDE_API_KEY="your-api-key"' >> ~/.ssh/.claude-api-key.sh
 chmod 600 ~/.ssh/.claude-api-key.sh
 #+END_SRC
 
-Example =~/.ssh/.claude-api-key.sh= file:
+Example =.claude-api-key.sh= file:
 #+BEGIN_SRC bash
 #!/bin/bash
 export CLAUDE_API_KEY_NAME="my-claude-key"
@@ -106,8 +129,15 @@ MIT
 
 * Changelog
 
+** v1.1.0 - 2025-08-23
+- Added support for file input
+- Added support for URL input with automatic HTML conversion
+- Added support for custom Ollama models
+- Improved argument parsing
+- Enhanced logging output
+
 ** v1.0.0 - 2025-08-23
 - Initial release
-- Bash 3.2+ compatibility
+- Amended for Bash 3.2+ compatibility
 - Support for Ollama, OpenAI, and Claude APIs
 - STDIN text processing
