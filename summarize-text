@@ -43,6 +43,10 @@ fi
 ollama_summarize() {
    info "Summarizing text with ollama"
    # brew services start ollama # just in case it's not already running
+   if ! command -v ollama >/dev/null 2>&1; then
+      echo "‼️ Ollama not found. Is it installed?" >&2
+      exit 1
+   fi
    ollama run "$ollama_model" "$prompt"
 }
 
