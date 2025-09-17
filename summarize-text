@@ -22,9 +22,9 @@ USAGE:
 WTF:
    Summarize the text from STDIN
 OPTIONS:
-   -l | --ollama:  Use the Ollama API with mistral (default, runs locally, 
+   -l | --ollama:  Use the Ollama API with mistral (runs locally, 
                    requires ollama launchd service to be running)
-   -o | --openai:  Use the OpenAI API 
+   -o | --openai:  Use the OpenAI API (default)
    -c | --claude:  Use the Claude API 
 EOM
    exit 1
@@ -77,7 +77,7 @@ claude_summarize() {
    claude "$prompt"
 }
 
-active_function=ollama_summarize
+active_function=openai_summarize
 ollama_model=mistral
 source=STDIN
 source_identifier=""
