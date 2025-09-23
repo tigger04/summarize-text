@@ -24,6 +24,7 @@ WTF:
 OPTIONS:
    -l | --ollama:  Use the Ollama API with mistral (runs locally, 
                    requires ollama launchd service to be running)
+      --ollama=model_name:  Use the Ollama API with specified model
    -o | --openai:  Use the OpenAI API (default)
    -c | --claude:  Use the Claude API 
 EOM
@@ -85,9 +86,9 @@ source_identifier=""
 while [ $# -gt 0 ]; do
    case $1 in
    -l* | --ollama*)
-      active_function="ollama"
-      if [ -n ${1#*=} ]; then
-         ollama_model="${1#*=}"
+      active_function=ollama_summarize
+      if [[ $1 =~ =(.*)$ ]]; then
+         ollama_model="${BASH_REMATCH[1]}"
       fi
       ;;
    -o | --openai)
@@ -109,8 +110,8 @@ while [ $# -gt 0 ]; do
 done
 
 construct_prompt() {
-   prompt="summarize the following text:"
-   prompt+=$'\n'
+   prompt="Please summarize the following text, in a series of bullet points, highlighting key points and insights."
+   prompt+=$'\n\n--------\n'
    while ifs= read -r line; do
       prompt+=$'\n'"$line"
    done
