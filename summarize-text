@@ -5,7 +5,9 @@ shopt -s dotglob
 
 # Get the base name of the script for help text
 cmd_base=$(basename "$0")
+pre_prompt="Briefly summarize the following text in a few bullets, preserving the original meaning. At the end, call out themes that seem pertinent or interesting."
 
+prompt+=$'\n\n--------\n'
 # Simple info function for logging
 info() {
    echo "🔷️🔷️🔷️ $* 🔷️🔷️🔷️" >&2
@@ -26,7 +28,15 @@ OPTIONS:
                    requires ollama launchd service to be running)
       --ollama=model_name:  Use the Ollama API with specified model
    -o | --openai:  Use the OpenAI API (default)
+      --openai=model_name:  Use the OpenAI API with specified model
    -c | --claude:  Use the Claude API 
+   -p | --preprompt="text":  Use custom pre-prompt text
+DEFAULTS:
+   --openai=gpt-4o:
+      Use the OpenAI API with gpt-4o model
+   Pre-prompt:
+      "$pre_prompt"
+
 EOM
    exit 1
 }
@@ -42,26 +52,47 @@ if [ "${BASH_VERSINFO[0]}" -lt 3 ] || ([ "${BASH_VERSINFO[0]}" -eq 3 ] && [ "${B
 fi
 
 ollama_summarize() {
-   info "Summarizing text with ollama"
+   info "Summarizing text with ollama using model: $ollama_model"
    # brew services start ollama # just in case it's not already running
    if ! command -v ollama >/dev/null 2>&1; then
       echo "‼️ Ollama not found. Is it installed?" >&2
       exit 1
    fi
+
+   # Check if the model is available
+   if ! ollama list | grep -q "^$ollama_model:"; then
+      echo "⚠️ Model '$ollama_model' not found locally." >&2
+      echo "Available models:" >&2
+      ollama list >&2
+      echo >&2
+      read -p "Download '$ollama_model'? (y/N): " -n 1 -r >&2
+      echo >&2
+      if [[ "${REPLY,,}" == y ]]; then
+         info "Downloading model: $ollama_model"
+         ollama pull "$ollama_model" || {
+            echo "❌ Failed to download model '$ollama_model'." >&2
+            exit 1
+         }
+      else
+         echo "❌ Cannot proceed without the model. Exiting." >&2
+         exit 1
+      fi
+   fi
+
    ollama run "$ollama_model" "$prompt"
 }
 
 openai_summarize() {
-   info "Summarizing text with OpenAI"
+   info "Summarizing text with OpenAI using model: $openai_model"
    source ~/.ssh/.openai-api-key.sh
 
    curl https://api.openai.com/v1/chat/completions \
       -s \
       -H "Authorization: Bearer $OPENAI_API_KEY" \
       -H "Content-Type: application/json" \
-      -d "$(jq -n --arg prompt "$prompt" \
+      -d "$(jq -n --arg prompt "$prompt" --arg model "$openai_model" \
          '{
-            model: "gpt-4o",
+            model: $model,
             messages: [
               {
                 role: "user",
@@ -80,6 +111,7 @@ claude_summarize() {
 
 active_function=openai_summarize
 ollama_model=mistral
+openai_model=gpt-4o
 source=STDIN
 source_identifier=""
 
@@ -91,15 +123,32 @@ while [ $# -gt 0 ]; do
          ollama_model="${BASH_REMATCH[1]}"
       fi
       ;;
-   -o | --openai)
+   -o* | --openai*)
       active_function=openai_summarize
+      if [[ $1 =~ =(.*)$ ]]; then
+         openai_model="${BASH_REMATCH[1]}"
+      fi
       ;;
    -c | --claude)
       active_function=claude_summarize
       ;;
+   -p* | --preprompt*)
+      if [[ $1 =~ =(.*)$ ]]; then
+         pre_prompt="${BASH_REMATCH[1]}"
+      else
+         shift
+         pre_prompt="$1"
+      fi
+      ;;
    http://* | https://*)
       source=URL
       source_identifier="$1"
+
+      command -v curl >/dev/null 2>&1 && command -v html2text >/dev/null 2>&1 || {
+         echo "‼️ curl and html2text are required to fetch and convert HTML content." >&2
+         exit 1
+      }
+
       ;;
    *)
       source=FILE
@@ -110,9 +159,8 @@ while [ $# -gt 0 ]; do
 done
 
 construct_prompt() {
-   prompt="Please summarize the following text, in a series of bullet points, highlighting key points and insights."
-   prompt+=$'\n\n--------\n'
-   while ifs= read -r line; do
+   prompt="$pre_prompt\n\n--------\n"
+   while IFS= read -r line; do
       prompt+=$'\n'"$line"
    done
 }
