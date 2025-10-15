@@ -10,8 +10,8 @@ case "$cmd_base" in
 summarize-text* | summarize*)
    pre_prompt="Briefly summarize the following text in a few bullet points, preserving the original meaning. At the end, call out themes that seem pertinent or interesting."
    ;;
-proof-text* | proof*)
-   pre_prompt="Proof the following text for spelling, grammar, and clarity. Re-frame the text in a polite, professional, and clear manner. Preserve the original meaning, framing it for accuracy, previty and clarity. Use bullets where appropriate."
+polish-text* | polish*)
+   pre_prompt="Please sharpen and improve the language and message of the following text, preserving key points and meaning. Keep things respectful, accurate, brief and clear. Utilize bullet points if appropriate. Never use emojis. If there is one key important message be sure to emphasize it, and if appropriate summarize it at the start and reference the importance of it at the end."
    ;;
 *)
    failtext="Unknown command name: $cmd_base"
@@ -40,7 +40,7 @@ USAGE
    
 WTF
 ---
-   Summarize or proofs a piece of text.
+   Summarize or polish a piece of text.
 
 WHERE
 -----
@@ -50,7 +50,6 @@ WHERE
      - '-' i.e. from standard input (stdin)
      - the clipboard (see opts)
      - selected text (see opts)
-         by literally triggering CMD+C / CTRL+C (depending on OS)
    OUTPUTS 
      - to STDOUT (default)
      - to a file using redirection (>)
@@ -70,13 +69,31 @@ OPTIONS
    
    INPUT
       -c / --clipboard
-      -s / --selection (copy using ctrl/cmd+C) followed by 0.3s delay
+      -s / --selection (0.3s delay for copy operation)
    
    OUTPUT
       -n / --notification # using notify command (or macOS osascript fallback)
       -d / --dialog # using dialog command (or macOS osascript fallback)
       -t / --type # using mactype command
       -p / --paste # copies to clipboard (macOS/Linux compatible)
+
+EXAMPLES
+--------
+   # Input methods
+   cat document.txt | $cmd_base              # stdin
+   $cmd_base document.txt                    # file  
+   $cmd_base --clipboard                     # clipboard
+   polish-text --selection                   # selection (polish mode)
+
+   # Output methods
+   $cmd_base document.txt                    # stdout (default)
+   $cmd_base document.txt --paste            # copy to clipboard
+   polish-text document.txt --notification   # system notification
+   $cmd_base --clipboard --dialog            # system dialog
+
+   # URL and AI options
+   $cmd_base https://example.com --claude
+   polish-text document.txt --ollama=llama2
 
 DEFAULTS
 --------
@@ -255,8 +272,6 @@ get_clipboard_content() {
 }
 
 get_selection_content() {
-   echo "📋 Please copy the text you want to process using Cmd+C/Ctrl+C..." >&2
-   echo "⏱️ Waiting 0.3 seconds for copy operation..." >&2
    sleep 0.3
    get_clipboard_content
 }
