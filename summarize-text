@@ -5,13 +5,27 @@ shopt -s dotglob
 
 # Get the base name of the script for help text
 cmd_base=$(basename "$0")
-pre_prompt="Briefly summarize the following text in a few bullet points, preserving the original meaning. At the end, call out themes that seem pertinent or interesting."
+
+case "$cmd_base" in
+summarize-text* | summarize*)
+   pre_prompt="Briefly summarize the following text in a few bullet points, preserving the original meaning. At the end, call out themes that seem pertinent or interesting."
+   ;;
+proof-text* | proof*)
+   pre_prompt="Proof the following text for spelling, grammar, and clarity. Re-frame the text in a polite, professional, and clear manner. Preserve the original meaning, framing it for accuracy, previty and clarity. Use bullets where appropriate."
+   ;;
+*)
+   failtext="Unknown command name: $cmd_base"
+   dialog "$failtext"
+   errortext "$failtext"
+   ;;
+esac
 
 active_function=openai_summarize
 ollama_model=mistral
-openai_model=gpt-5
+openai_model=gpt-4
 source=STDIN
 source_identifier=""
+output_mode=STDOUT
 
 # Simple info function for logging
 info() {
@@ -20,25 +34,57 @@ info() {
 
 display_help_text_and_die() {
    cat - <<EOM
-USAGE:
-   some_command | $cmd_base [OPTION]
-   - or -
-   $cmd_base [OPTION] FILE
-   - or -
-   $cmd_base [OPTION] URL
-WTF:
-   Summarize the text from STDIN
-OPTIONS:
+USAGE
+-----
+   $cmd_base [OPTIONS] INPUT [OUTPUT]
+   
+WTF
+---
+   Summarize or proofs a piece of text.
+
+WHERE
+-----
+   INPUT (mandatory) can be:
+     - a filename
+     - a URL (starting with http:// or https://)
+     - '-' i.e. from standard input (stdin)
+     - the clipboard (see opts)
+     - selected text (see opts)
+         by literally triggering CMD+C / CTRL+C (depending on OS)
+   OUTPUTS 
+     - to STDOUT (default)
+     - to a file using redirection (>)
+     - pasted (see opts) by triggering CMD+V / CTRL+V (depending on OS)
+     - typed (see opts)
+     - a notification (see opts)
+     - a dialog (see opts)
+OPTIONS
+-------
+   AI MODELS
+
    -l | --ollama[=model_name]: Use the Ollama API (with given model if specified)
                                (requires ollama launchd service to be running)
    -o | --openai[=model_name]: Use the OpenAI API (with given model if specified)
-   -c | --claude:  Use the Claude API 
-   -p | --preprompt[=]PRE_PROMPT: Use custom PRE_PROMPT
-DEFAULTS:
+   --claude:  Use the Claude API 
+   --preprompt[=]PRE_PROMPT: Use custom PRE_PROMPT
+   
+   INPUT
+      -c / --clipboard
+      -s / --selection (copy using ctrl/cmd+C) followed by 0.3s delay
+   
+   OUTPUT
+      -n / --notification # using notify command (or macOS osascript fallback)
+      -d / --dialog # using dialog command (or macOS osascript fallback)
+      -t / --type # using mactype command
+      -p / --paste # copies to clipboard (macOS/Linux compatible)
+
+DEFAULTS
+--------
    Active function: $active_function
    Ollama model: $ollama_model
    OpenAI model: $openai_model
    Source: $source
+   Output mode: $output_mode
    Pre-prompt:
       "$pre_prompt"
 
@@ -84,14 +130,16 @@ ollama_summarize() {
       fi
    fi
 
-   ollama run "$ollama_model" "$prompt"
+   result=$(ollama run "$ollama_model" "$prompt")
+   output_result "$result"
 }
 
 openai_summarize() {
    info "Summarizing text with OpenAI using model: $openai_model"
+   # shellcheck source=/dev/null
    source ~/.ssh/.openai-api-key.sh
 
-   curl https://api.openai.com/v1/chat/completions \
+   result=$(curl https://api.openai.com/v1/chat/completions \
       -s \
       -H "Authorization: Bearer $OPENAI_API_KEY" \
       -H "Content-Type: application/json" \
@@ -104,18 +152,22 @@ openai_summarize() {
                 content: $prompt
                }
             ]
-      }')" | jq -r '.choices[0].message.content'
+      }')" | jq -r '.choices[0].message.content')
+   output_result "$result"
 }
 
 claude_summarize() {
    info "Summarizing text with Claude"
    command -v claude >/dev/null 2>&1 || exit 1
+   # shellcheck source=/dev/null
    source ~/.ssh/.claude-api-key.sh
-   claude "$prompt"
+   result=$(claude "$prompt")
+   output_result "$result"
 }
 
 while [ $# -gt 0 ]; do
    case $1 in
+   # AI Model options
    -l* | --ollama*)
       active_function=ollama_summarize
       if [[ $1 =~ =(.*)$ ]]; then
@@ -128,10 +180,10 @@ while [ $# -gt 0 ]; do
          openai_model="${BASH_REMATCH[1]}"
       fi
       ;;
-   -c | --claude)
+   --claude)
       active_function=claude_summarize
       ;;
-   -p* | --preprompt*)
+   --preprompt*)
       if [[ $1 =~ =(.*)$ ]]; then
          pre_prompt="${BASH_REMATCH[1]}"
       else
@@ -139,6 +191,27 @@ while [ $# -gt 0 ]; do
          pre_prompt="$1"
       fi
       ;;
+   # Input options
+   -c | --clipboard)
+      source=CLIPBOARD
+      ;;
+   -s | --selection)
+      source=SELECTION
+      ;;
+   # Output options
+   -n | --notification)
+      output_mode=NOTIFICATION
+      ;;
+   -d | --dialog)
+      output_mode=DIALOG
+      ;;
+   -t | --type)
+      output_mode=TYPE
+      ;;
+   -p | --paste)
+      output_mode=PASTE
+      ;;
+   # URL input
    http://* | https://*)
       source=URL
       source_identifier="$1"
@@ -149,6 +222,7 @@ while [ $# -gt 0 ]; do
       }
 
       ;;
+   # File input (default case)
    *)
       source=FILE
       source_identifier="$1"
@@ -158,10 +232,104 @@ while [ $# -gt 0 ]; do
 done
 
 construct_prompt() {
-   prompt="$pre_prompt\n\n--------\n"
+   prompt="$pre_prompt"$'\n\n'"--------"$'\n'
    while IFS= read -r line; do
       prompt+=$'\n'"$line"
    done
+}
+
+get_clipboard_content() {
+   if command -v pbpaste >/dev/null 2>&1; then
+      # macOS
+      pbpaste
+   elif command -v xclip >/dev/null 2>&1; then
+      # Linux with xclip
+      xclip -selection clipboard -o
+   elif command -v xsel >/dev/null 2>&1; then
+      # Linux with xsel
+      xsel --clipboard --output
+   else
+      echo "‼️ No clipboard utility found (pbpaste, xclip, or xsel)" >&2
+      exit 1
+   fi
+}
+
+get_selection_content() {
+   echo "📋 Please copy the text you want to process using Cmd+C/Ctrl+C..." >&2
+   echo "⏱️ Waiting 0.3 seconds for copy operation..." >&2
+   sleep 0.3
+   get_clipboard_content
+}
+
+output_result() {
+   local result="$1"
+   
+   case "$output_mode" in
+   STDOUT)
+      echo "$result"
+      ;;
+   NOTIFICATION)
+      if command -v notify >/dev/null 2>&1; then
+         notify "$result"
+      elif command -v osascript >/dev/null 2>&1; then
+         # macOS fallback using osascript - escape quotes and limit length
+         local notification_text
+         notification_text="${result//\"/\\\"}"
+         # Truncate if too long for notifications
+         if [ ${#notification_text} -gt 200 ]; then
+            notification_text="${notification_text:0:197}..."
+         fi
+         osascript -e "display notification \"$notification_text\" with title \"Text Summary\""
+      else
+         echo "‼️ ~/bin/notify not found and no notification fallback available" >&2
+         echo "$result"
+      fi
+      ;;
+   DIALOG)
+      if command -v dialog >/dev/null 2>&1; then
+         dialog "$result"
+      elif command -v osascript >/dev/null 2>&1; then
+         # macOS fallback using osascript
+         osascript -e "display dialog \"$result\" with title \"Text Summary\""
+      else
+         echo "‼️ ~/bin/dialog not found and no dialog fallback available" >&2
+         echo "$result"
+      fi
+      ;;
+   TYPE)
+      if command -v mactype >/dev/null 2>&1; then
+         echo "$result" | mactype
+      else
+         echo "⚠️ ~/bin/mactype not found - outputting to stdout instead" >&2
+         echo "$result"
+      fi
+      ;;
+   PASTE)
+      if command -v pbcopy >/dev/null 2>&1; then
+         # macOS - copy to clipboard
+         echo "$result" | pbcopy
+         echo "📋 Result copied to clipboard" >&2
+      elif [[ "$OSTYPE" == "darwin"* ]]; then
+         # macOS - attempt to paste using skhd
+         echo "$result" | pbcopy
+         echo "⚠️ skhd paste not implemented - result copied to clipboard instead" >&2
+      elif command -v xclip >/dev/null 2>&1; then
+         # Linux with xclip
+         echo "$result" | xclip -selection clipboard
+         echo "📋 Result copied to clipboard" >&2
+      elif command -v xsel >/dev/null 2>&1; then
+         # Linux with xsel
+         echo "$result" | xsel --clipboard --input
+         echo "📋 Result copied to clipboard" >&2
+      else
+         echo "‼️ No clipboard utility found - outputting to stdout" >&2
+         echo "$result"
+      fi
+      ;;
+   *)
+      echo "$result"
+      ;;
+   esac
 }
 
 case "$source" in
@@ -175,6 +343,14 @@ URL)
    ;;
 FILE)
    construct_prompt <"$source_identifier"
+   $active_function
+   ;;
+CLIPBOARD)
+   construct_prompt < <(get_clipboard_content)
+   $active_function
+   ;;
+SELECTION)
+   construct_prompt < <(get_selection_content)
    $active_function
    ;;
 *)
