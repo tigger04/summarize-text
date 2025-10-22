@@ -11,7 +11,7 @@ summarize-text* | summarize*)
    pre_prompt="Briefly summarize the following text in a few bullet points, preserving the original meaning. At the end, call out themes that seem pertinent or interesting."
    ;;
 polish-text* | polish*)
-   pre_prompt="Please sharpen and improve the language and message of the following text, preserving key points and meaning. Keep things respectful, accurate, brief and clear. Utilize bullet points if appropriate. Never use emojis. If there is one key important message be sure to emphasize it, and if appropriate summarize it at the start and reference the importance of it at the end."
+   pre_prompt="Please sharpen and improve the language and message of the following text, preserving key points and meaning. Keep things respectful, accurate, brief and clear. Never use emojis. If there is one key important message be sure to emphasize it. If and only if the message is lengthy, introduce it by setting context and end it with a concise summary with clear takeaways."
    ;;
 *)
    failtext="Unknown command name: $cmd_base"
