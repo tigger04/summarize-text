@@ -13,6 +13,9 @@ summarize-text* | summarize*)
 polish-text* | polish*)
    pre_prompt="Please sharpen and improve the language and message of the following text, preserving key points and meaning. Keep things respectful, accurate, brief and clear. Never use emojis. If there is one key important message be sure to emphasize it. If and only if the message is lengthy, introduce it by setting context and end it with a concise summary with clear takeaways."
    ;;
+smart-filename | smartname)
+   pre_prompt="Generate a concise, descriptive filename for the following content (excluding extension). The filename should be in lowercase, use hyphens to separate words, and avoid special characters. It should accurately reflect the main topic or theme of the content. If the content is a receipt or invoice, it should be prefixed with YYYY-MM-DD-X.XX-smarname where X.XX is the total amount of the receipt or invoice in euro. Assume the currency is euro if not explicitly stated in the document. If the currency is anything other than euro, the prefix should be YYYY-MM-DD-CCC-X.XX-smartname where CCC is the ISO 4217 currency code."
+   ;;
 *)
    failtext="Unknown command name: $cmd_base"
    dialog "$failtext"
@@ -120,7 +123,6 @@ if [ "${BASH_VERSINFO[0]}" -lt 3 ] || ([ "${BASH_VERSINFO[0]}" -eq 3 ] && [ "${B
 fi
 
 ollama_summarize() {
-   info "Summarizing text with ollama using model: $ollama_model"
    # brew services start ollama # just in case it's not already running
    if ! command -v ollama >/dev/null 2>&1; then
       echo "‼️ Ollama not found. Is it installed?" >&2
@@ -152,7 +154,6 @@ ollama_summarize() {
 }
 
 openai_summarize() {
-   info "Summarizing text with OpenAI using model: $openai_model"
    # shellcheck source=/dev/null
    source ~/.ssh/.openai-api-key.sh
 
@@ -174,7 +175,6 @@ openai_summarize() {
 }
 
 claude_summarize() {
-   info "Summarizing text with Claude"
    command -v claude >/dev/null 2>&1 || exit 1
    # shellcheck source=/dev/null
    source ~/.ssh/.claude-api-key.sh
@@ -278,7 +278,7 @@ get_selection_content() {
 
 output_result() {
    local result="$1"
-   
+
    case "$output_mode" in
    STDOUT)
       echo "$result"
@@ -347,26 +347,31 @@ output_result() {
    esac
 }
 
+doit() {
+   info "$cmd_base using $active_function"
+   $active_function
+}
+
 case "$source" in
 STDIN)
    construct_prompt
-   $active_function
+   doit $active_function
    ;;
 URL)
    construct_prompt < <(curl -s "$source_identifier" | html2text)
-   $active_function
+   doit $active_function
    ;;
 FILE)
    construct_prompt <"$source_identifier"
-   $active_function
+   doit $active_function
    ;;
 CLIPBOARD)
    construct_prompt < <(get_clipboard_content)
-   $active_function
+   doit $active_function
    ;;
 SELECTION)
    construct_prompt < <(get_selection_content)
-   $active_function
+   doit $active_function
    ;;
 *)
    echo "Unknown source type: $source"
