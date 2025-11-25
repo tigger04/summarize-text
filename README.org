@@ -1,12 +1,12 @@
 #+TITLE: Summarize Text
 #+AUTHOR: Your Name
 #+DATE: 2025-08-23
-#+DESCRIPTION: A bash script to summarize text using various AI APIs
+#+DESCRIPTION: A bash script suite to summarize, polish, and generate smart filenames for text using various AI APIs
 #+KEYWORDS: bash, AI, summarization, ollama, openai, claude
 
-A bash script that either summarizes or proofreads text using Ollama (local), OpenAI, or Claude APIs. It reads text from multiple sources (STDIN, files, URLs, clipboard, or selection) and outputs results to STDOUT, notifications, dialogs, clipboard, or typed automatically.
+A collection of bash scripts that process text using Ollama (local), OpenAI, or Claude APIs. They read text from multiple sources (STDIN, files, URLs, clipboard, or selection) and output results to STDOUT, notifications, dialogs, clipboard, or typed automatically.
 
-The script operates in one of two modes: summarization when run as =summarize-text= or polishing when run as =polish-text=.
+The suite operates in three modes: summarization (=summarize-text=), polishing (=polish-text=), or smart filename generation (=smart-filename=).
 
 * Quick Start
 ** Installation
@@ -73,28 +73,46 @@ cat document.txt | ./summarize-text           # stdin
 # URL and AI options
 ./summarize-text https://example.com --claude
 ./polish-text document.txt --ollama=llama2
+
+# Smart filename mode
+./smart-filename receipt.pdf                  # generate filename with rename prompt
+./smart-filename document.txt -y              # auto-rename without confirmation
+./smart-filename --clipboard                  # generate from clipboard (no rename)
 #+END_SRC
 
-* Dual Functionality
+* Triple Functionality
 
-This script provides two different modes depending on how it's invoked:
+This suite provides three different modes with separate scripts:
 
-** Summarize Mode (default)
-When run as =summarize-text= or =summarize=:
+** Summarize Mode
+When run as =summarize-text=:
 - Summarizes text in bullet points
 - Calls out pertinent themes and interesting points
 - Default prompt: "Briefly summarize the following text in a few bullet points, preserving the original meaning. At the end, call out themes that seem pertinent or interesting."
 - Prompt is configurable
 
 ** Polish Mode
-When run as =polish-text= or =polish=:
+When run as =polish-text=:
 - Takes scattered or unclear text and structures it clearly
 - Improves grammar, clarity, and professional tone
 - Default prompt: "Please sharpen and improve the language and message of the following text, preserving key points and meaning. Keep things respectful, accurate, brief and clear. Utilize bullet points if appropriate. Never use emojis."
-- Prompt is configurable#+BEGIN_SRC bash
-# Use either mode
+- Prompt is configurable
+
+** Smart Filename Mode
+When run as =smart-filename=:
+- Generates descriptive, filesystem-friendly filenames from content
+- For receipts/invoices: includes date and amount (YYYY-MM-DD-X.XX-filename)
+- For other content: includes date (filename-YY-MM-DD or filename-YY-MM)
+- When input is a file: offers to rename it with the generated filename
+- Use =-y= or =--yes= flag to skip confirmation prompt
+- Prompt is configurable
+
+#+BEGIN_SRC bash
+# Use any mode
 ./summarize-text document.txt    # Summarization
 ./polish-text document.txt       # Polishing
+./smart-filename document.txt    # Generate filename (with rename prompt)
+./smart-filename document.txt -y # Generate and rename without prompt
 #+END_SRC
 
 * Command Line Options
@@ -190,6 +208,18 @@ MIT
 
 * Changelog
 
+** v3.0.0 - 2025-11-25
+- Reorganized project structure: split monolithic script into modular architecture
+- Created summarize-text-lib.sh shared library for reusable functions
+- Replaced symlinks with separate script files (summarize-text, polish-text, smart-filename)
+- Added smart-filename mode with automatic file renaming capability
+- Added -y/--yes flag to smart-filename for non-interactive renaming
+- Updated bash requirement from 3.2+ to 5.0+ per project design principles
+- Fixed OpenAI model default to gpt-4 (was incorrectly gpt-5 in code)
+- Added bats-core test suite with 'make test' support
+- Improved code maintainability with separation of concerns
+- Each script now has its own execution logic (removed shared doIt function)
+
 ** v2.0.0 - 2025-10-15
 - Added text polishing functionality (polish-text mode)
 - Added clipboard input support (--clipboard/-c)
@@ -215,6 +245,6 @@ MIT
 
 ** v1.0.0 - 2025-08-23
 - Initial release
-- Amended for Bash 3.2+ compatibility
+- Bash 3.2+ compatibility (later updated to require Bash 5.0+ in v3.0.0)
 - Support for Ollama, OpenAI, and Claude APIs
 - STDIN text processing

@@ -1,1 +1,209 @@
-summarize-text
+#!/usr/bin/env bash
+
+set -e -o pipefail
+shopt -s dotglob
+
+# Source the shared library
+script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./summarize-text-lib.sh
+source "$script_dir/summarize-text-lib.sh"
+
+# Script-specific configuration
+cmd_base=$(basename "$0")
+pre_prompt="Generate a concise, descriptive filename for the following content (excluding extension). The filename should be in lowercase, use hyphens to separate words, and avoid special characters. It should accurately reflect the main topic or theme of the content. If the content is a receipt or invoice, it should be prefixed with YYYY-MM-DD-X.XX-smarname where X.XX is the total amount of the receipt or invoice in euro. Assume the currency is euro if not explicitly stated in the document. If the currency is anything other than euro, the prefix should be YYYY-MM-DD-CCC-X.XX-smartname where CCC is the ISO 4217 currency code. If the content is not a receipt or invoice, it should include the datae at the end in YY-MM-DD format. If the date cannot be ascertained from the content, use the current month and year in YY-MM format."
+
+# Flag for skipping confirmation
+skip_confirmation=false
+rename_original=""
+
+display_help_text_and_die() {
+   cat - <<EOM
+USAGE
+-----
+   $cmd_base [OPTIONS] INPUT
+
+WTF
+---
+   Generate a smart filename for content and optionally rename the file.
+
+WHERE
+-----
+   INPUT (mandatory) can be:
+     - a filename
+     - a URL (starting with http:// or https://)
+     - '-' i.e. from standard input (stdin)
+     - the clipboard (see opts)
+     - selected text (see opts)
+   OUTPUTS
+     - to STDOUT (default) - just the generated filename
+     - If INPUT is a file, offers to rename it to the generated filename
+
+OPTIONS
+-------
+   AI MODELS
+
+   -l | --ollama[=model_name]: Use the Ollama API (with given model if specified)
+                               (requires ollama launchd service to be running)
+   -o | --openai[=model_name]: Use the OpenAI API (with given model if specified)
+   --claude:  Use the Claude API
+   --preprompt[=]PRE_PROMPT: Use custom PRE_PROMPT
+
+   INPUT
+      -c / --clipboard
+      -s / --selection (0.3s delay for copy operation)
+
+   RENAME OPTIONS
+      -y / --yes: Skip confirmation prompt when renaming files
+
+EXAMPLES
+--------
+   # Generate filename from file (with rename prompt)
+   $cmd_base document.txt
+
+   # Generate filename and auto-rename without confirmation
+   $cmd_base document.txt -y
+
+   # Generate filename from clipboard (no rename)
+   $cmd_base --clipboard
+
+   # Use different AI model
+   $cmd_base document.txt --claude
+
+DEFAULTS
+--------
+   Active function: $active_function
+   Ollama model: $ollama_model
+   OpenAI model: $openai_model
+   Source: $source
+   Pre-prompt:
+      "$pre_prompt"
+
+EOM
+   exit 1
+}
+
+# Custom argument parser for smart-filename specific options
+parse_smart_filename_arguments() {
+   while [ $# -gt 0 ]; do
+      case $1 in
+      -y | --yes)
+         skip_confirmation=true
+         ;;
+      -h | --help)
+         display_help_text_and_die
+         ;;
+      # AI Model options
+      -l* | --ollama*)
+         active_function=ollama_summarize
+         if [[ $1 =~ =(.*)$ ]]; then
+            ollama_model="${BASH_REMATCH[1]}"
+         fi
+         ;;
+      -o* | --openai*)
+         active_function=openai_summarize
+         if [[ $1 =~ =(.*)$ ]]; then
+            openai_model="${BASH_REMATCH[1]}"
+         fi
+         ;;
+      --claude)
+         active_function=claude_summarize
+         ;;
+      --preprompt*)
+         if [[ $1 =~ =(.*)$ ]]; then
+            pre_prompt="${BASH_REMATCH[1]}"
+         else
+            shift
+            pre_prompt="$1"
+         fi
+         ;;
+      # Input options
+      -c | --clipboard)
+         source=CLIPBOARD
+         ;;
+      -s | --selection)
+         source=SELECTION
+         ;;
+      # URL input
+      http://* | https://*)
+         source=URL
+         source_identifier="$1"
+
+         command -v curl >/dev/null 2>&1 && command -v html2text >/dev/null 2>&1 || {
+            echo "‼️ curl and html2text are required to fetch and convert HTML content." >&2
+            exit 1
+         }
+         ;;
+      # File input (default case) - store for potential rename
+      *)
+         source=FILE
+         source_identifier="$1"
+         rename_original="$1"
+         ;;
+      esac
+      shift
+   done
+}
+
+# Custom output handler that can perform file rename
+smart_filename_output() {
+   local generated_name="$1"
+
+   # Output the generated filename
+   echo "$generated_name"
+
+   # If source was a file, offer to rename
+   if [[ -n "$rename_original" && -f "$rename_original" ]]; then
+      # Get file extension
+      local extension="${rename_original##*.}"
+      local new_filename
+
+      # If there's an extension and it's not the whole filename, add it
+      if [[ "$extension" != "$rename_original" && -n "$extension" ]]; then
+         new_filename="${generated_name}.${extension}"
+      else
+         new_filename="$generated_name"
+      fi
+
+      # Check if target already exists
+      if [[ -e "$new_filename" ]]; then
+         echo "⚠️ Target file '$new_filename' already exists. Skipping rename." >&2
+         return 0
+      fi
+
+      # Prompt for confirmation unless -y flag was used
+      if [[ "$skip_confirmation" == false ]]; then
+         read -p "Rename '$rename_original' to '$new_filename'? (y/N): " -n 1 -r >&2
+         echo >&2
+         if [[ ! "${REPLY,,}" == y ]]; then
+            echo "Rename cancelled." >&2
+            return 0
+         fi
+      fi
+
+      # Perform the rename
+      mv "$rename_original" "$new_filename" && {
+         echo "✓ Renamed to: $new_filename" >&2
+      } || {
+         echo "❌ Failed to rename file" >&2
+         return 1
+      }
+   fi
+}
+
+# Handle help flag
+if [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
+   display_help_text_and_die
+fi
+
+# Parse command-line arguments
+parse_smart_filename_arguments "$@"
+
+# Override output_result to use our custom handler
+output_result() {
+   smart_filename_output "$1"
+}
+
+# Execute processing and run the active function
+execute_processing
+info "$cmd_base using $active_function"
+$active_function
