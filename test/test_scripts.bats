@@ -101,3 +101,46 @@ setup() {
    run "$PROJECT_ROOT/smart-filename" --help
    [[ "$output" =~ "-y" ]] || [[ "$output" =~ "--yes" ]]
 }
+
+# Test symlink support
+@test "summarize-text works via symlink" {
+   # Create temporary directory and symlink
+   TEMP_DIR=$(mktemp -d)
+   ln -s "$PROJECT_ROOT/summarize-text" "$TEMP_DIR/summarize-test-link"
+
+   # Test that help works via symlink
+   run "$TEMP_DIR/summarize-test-link" --help
+   [ "$status" -eq 1 ]  # Help exits with 1
+   [[ "$output" =~ "USAGE" ]]
+
+   # Cleanup
+   rm -rf "$TEMP_DIR"
+}
+
+@test "polish-text works via symlink" {
+   # Create temporary directory and symlink
+   TEMP_DIR=$(mktemp -d)
+   ln -s "$PROJECT_ROOT/polish-text" "$TEMP_DIR/polish-test-link"
+
+   # Test that help works via symlink
+   run "$TEMP_DIR/polish-test-link" --help
+   [ "$status" -eq 1 ]  # Help exits with 1
+   [[ "$output" =~ "USAGE" ]]
+
+   # Cleanup
+   rm -rf "$TEMP_DIR"
+}
+
+@test "smart-filename works via symlink" {
+   # Create temporary directory and symlink
+   TEMP_DIR=$(mktemp -d)
+   ln -s "$PROJECT_ROOT/smart-filename" "$TEMP_DIR/smart-test-link"
+
+   # Test that help works via symlink
+   run "$TEMP_DIR/smart-test-link" --help
+   [ "$status" -eq 1 ]  # Help exits with 1
+   [[ "$output" =~ "USAGE" ]]
+
+   # Cleanup
+   rm -rf "$TEMP_DIR"
+}

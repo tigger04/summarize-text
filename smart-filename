@@ -3,8 +3,14 @@
 set -e -o pipefail
 shopt -s dotglob
 
-# Source the shared library
-script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Source the shared library - resolve symlinks to find actual script location
+script="${BASH_SOURCE[0]}"
+while [[ -L "$script" ]]; do
+    script_dir="$(cd -P "$(dirname "$script")" && pwd)"
+    script="$(readlink "$script")"
+    [[ $script != /* ]] && script="$script_dir/$script"
+done
+script_dir="$(cd -P "$(dirname "$script")" && pwd)"
 # shellcheck source=./summarize-text-lib.sh
 source "$script_dir/summarize-text-lib.sh"
 
