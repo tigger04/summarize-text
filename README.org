@@ -22,6 +22,8 @@ Clone the repo and add the directory to your PATH.
 
 *** Optional (for enhanced functionality)
 - html2text (for URL processing)
+- poppler (provides pdftotext for PDF file processing)
+- pandoc (for processing docx, odt, rtf, and other document formats)
 - pbcopy/pbpaste (macOS) or xclip/xsel (Linux) for clipboard operations
 - notify command for notifications (falls back to osascript on macOS)
 - dialog command for dialogs (falls back to osascript on macOS)
@@ -30,7 +32,7 @@ Clone the repo and add the directory to your PATH.
 ** Install (macOS)
 
 #+BEGIN_SRC bash
-brew install curl jq html2text
+brew install curl jq html2text poppler pandoc
 brew install --cask ollama
 brew services start ollama
 ollama pull mistral
@@ -40,7 +42,7 @@ ollama pull mistral
 
 #+BEGIN_SRC bash
 sudo apt update
-sudo apt install curl jq html2text
+sudo apt install curl jq html2text poppler-utils pandoc
 #+END_SRC
 
 - [[https://ollama.com/download/linux][Follow Ollama install instructions here]]
@@ -106,6 +108,13 @@ When run as =smart-filename=:
 - When input is a file: offers to rename it with the generated filename
 - Use =-y= or =--yes= flag to skip confirmation prompt
 - Prompt is configurable
+
+*** Supported File Types
+All scripts automatically handle various file types:
+- *Text files*: txt, md, json, xml, etc. (processed directly)
+- *PDF files*: Requires =pdftotext= from poppler/poppler-utils
+- *Document files*: docx, odt, rtf, etc. (requires =pandoc=)
+- Unsupported binary formats are rejected with helpful error messages
 
 #+BEGIN_SRC bash
 # Use any mode
@@ -207,6 +216,16 @@ export CLAUDE_API_KEY="sk-ant-12340000000000000000000000000000000000000000000000
 MIT
 
 * Changelog
+
+** v3.2.0 - 2025-11-25
+- Added intelligent file type detection and validation
+- Added PDF text extraction support using pdftotext (requires poppler/poppler-utils)
+- Added document format support (docx, odt, rtf) using pandoc as fallback
+- Text files (txt, md, json, xml) continue to be processed directly
+- Unsupported binary formats are rejected with helpful error messages
+- Added comprehensive test coverage for file type handling
+- Updated dependencies in README for poppler and pandoc
+- Added prepare_file_content() function to summarize-text-lib.sh
 
 ** v3.1.0 - 2025-11-25
 - Reverted bash requirement to 3.2+ for public project compatibility

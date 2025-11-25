@@ -255,6 +255,58 @@ parse_common_arguments() {
    done
 }
 
+# Prepare file content - handle various file types with validation
+prepare_file_content() {
+   local filepath="$1"
+
+   # Check if file exists
+   if [[ ! -f "$filepath" ]]; then
+      echo "‼️ File not found: $filepath" >&2
+      exit 1
+   fi
+
+   # Detect MIME type
+   local mime_type
+   mime_type=$(file --mime-type -b "$filepath" 2>/dev/null)
+
+   # Handle text files directly (including markdown, json, xml, etc.)
+   if [[ "$mime_type" =~ ^text/ ]] || [[ "$mime_type" == "application/json" ]] || [[ "$mime_type" == "application/xml" ]] || [[ "$mime_type" == "inode/x-empty" ]]; then
+      cat "$filepath"
+      return 0
+   fi
+
+   # Handle PDF files with pdftotext
+   if [[ "$mime_type" == "application/pdf" ]]; then
+      if ! command -v pdftotext >/dev/null 2>&1; then
+         echo "‼️ pdftotext not found. Install poppler-utils to process PDF files." >&2
+         echo "   macOS: brew install poppler" >&2
+         echo "   Linux: sudo apt install poppler-utils" >&2
+         exit 1
+      fi
+      pdftotext "$filepath" - 2>/dev/null || {
+         echo "‼️ Failed to extract text from PDF: $filepath" >&2
+         exit 1
+      }
+      return 0
+   fi
+
+   # Try pandoc for other binary files (docx, odt, rtf, etc.)
+   if command -v pandoc >/dev/null 2>&1; then
+      if pandoc "$filepath" -t plain -o - 2>/dev/null; then
+         return 0
+      fi
+   fi
+
+   # Unsupported file type
+   echo "‼️ Unsupported file type: $mime_type" >&2
+   echo "File: $filepath" >&2
+   echo "Supported types:" >&2
+   echo "  - Text files (txt, md, json, xml, etc.)" >&2
+   echo "  - PDF files (requires pdftotext from poppler-utils)" >&2
+   echo "  - Document files (docx, odt, rtf, etc. - requires pandoc)" >&2
+   exit 1
+}
+
 # Execute the main processing based on source type
 execute_processing() {
    case "$source" in
@@ -265,7 +317,7 @@ execute_processing() {
       construct_prompt < <(curl -s "$source_identifier" | html2text)
       ;;
    FILE)
-      construct_prompt <"$source_identifier"
+      construct_prompt < <(prepare_file_content "$source_identifier")
       ;;
    CLIPBOARD)
       construct_prompt < <(get_clipboard_content)
