@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # summarize-text library - shared functions for text summarization tools
 
-# Check for bash v5.0+
-if [ "${BASH_VERSINFO[0]}" -lt 5 ]; then
-   echo "This script requires bash 5.0 or higher." >&2
+# Check for bash v3.2+
+if [ "${BASH_VERSINFO[0]}" -lt 3 ] || ([ "${BASH_VERSINFO[0]}" -eq 3 ] && [ "${BASH_VERSINFO[1]}" -lt 2 ]); then
+   echo "This script requires bash 3.2 or higher." >&2
    echo "Current version: ${BASH_VERSION}" >&2
    exit 1
 fi
@@ -36,7 +36,7 @@ ollama_summarize() {
       echo >&2
       read -p "Download '$ollama_model'? (y/N): " -n 1 -r >&2
       echo >&2
-      if [[ "${REPLY,,}" == y ]]; then
+      if [[ "$REPLY" == [yY] ]]; then
          info "Downloading model: $ollama_model"
          ollama pull "$ollama_model" || {
             echo "❌ Failed to download model '$ollama_model'." >&2

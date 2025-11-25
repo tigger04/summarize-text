@@ -9,8 +9,8 @@ setup() {
 }
 
 # Test library bash version check
-@test "library requires bash 5.0+" {
-   # Test with current bash (should be 5+)
+@test "library requires bash 3.2+" {
+   # Test with current bash (should be 3.2+)
    run bash -c "source '$PROJECT_ROOT/summarize-text-lib.sh' 2>&1"
    [ "$status" -eq 0 ]
 }

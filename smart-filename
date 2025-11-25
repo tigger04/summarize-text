@@ -180,7 +180,7 @@ smart_filename_output() {
       if [[ "$skip_confirmation" == false ]]; then
          read -p "Rename '$rename_original' to '$new_filename'? (y/N): " -n 1 -r >&2
          echo >&2
-         if [[ ! "${REPLY,,}" == y ]]; then
+         if [[ ! "$REPLY" == [yY] ]]; then
             echo "Rename cancelled." >&2
             return 0
          fi

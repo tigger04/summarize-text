@@ -208,13 +208,20 @@ MIT
 
 * Changelog
 
+** v3.1.0 - 2025-11-25
+- Reverted bash requirement to 3.2+ for public project compatibility
+- Fixed bash 4.0+ case modification syntax (${var,,}) to bash 3.2 compatible ([yY])
+- Updated version check from 5.0+ to 3.2+ in library
+- Maintains all v3.0.0 functionality with broader compatibility
+- Per docs/patterns.md: public projects maintain bash 3.2 compatibility
+
 ** v3.0.0 - 2025-11-25
 - Reorganized project structure: split monolithic script into modular architecture
 - Created summarize-text-lib.sh shared library for reusable functions
 - Replaced symlinks with separate script files (summarize-text, polish-text, smart-filename)
 - Added smart-filename mode with automatic file renaming capability
 - Added -y/--yes flag to smart-filename for non-interactive renaming
-- Updated bash requirement from 3.2+ to 5.0+ per project design principles
+- Temporarily updated bash requirement to 5.0+ (reverted to 3.2+ in v3.1.0)
 - Fixed OpenAI model default to gpt-4 (was incorrectly gpt-5 in code)
 - Added bats-core test suite with 'make test' support
 - Improved code maintainability with separation of concerns
@@ -245,6 +252,6 @@ MIT
 
 ** v1.0.0 - 2025-08-23
 - Initial release
-- Bash 3.2+ compatibility (later updated to require Bash 5.0+ in v3.0.0)
+- Bash 3.2+ compatibility (temporarily changed to 5.0+ in v3.0.0, reverted in v3.1.0)
 - Support for Ollama, OpenAI, and Claude APIs
 - STDIN text processing
