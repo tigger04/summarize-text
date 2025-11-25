@@ -65,7 +65,7 @@ setup() {
 @test "library sets correct default openai_model" {
    run bash -c "source '$PROJECT_ROOT/summarize-text-lib.sh' && echo \$openai_model"
    [ "$status" -eq 0 ]
-   [ "$output" = "gpt-4" ]
+   [ "$output" = "gpt-5" ]
 }
 
 # Test that scripts are no longer symlinks

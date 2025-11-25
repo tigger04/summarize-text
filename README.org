@@ -102,11 +102,12 @@ When run as =polish-text=:
 
 ** Smart Filename Mode
 When run as =smart-filename=:
-- Generates descriptive, filesystem-friendly filenames from content
+- Analyzes a file and generates a smart, descriptive filename
 - For receipts/invoices: includes date and amount (YYYY-MM-DD-X.XX-filename)
 - For other content: includes date (filename-YY-MM-DD or filename-YY-MM)
-- When input is a file: offers to rename it with the generated filename
-- Use =-y= or =--yes= flag to skip confirmation prompt
+- Offers to rename the file with simple y/n prompt
+- Use =-y= or =--yes= flag to automatically rename without confirmation
+- Input: file path (required) or =--clipboard=
 - Prompt is configurable
 
 *** Supported File Types
@@ -120,15 +121,16 @@ All scripts automatically handle various file types:
 # Use any mode
 ./summarize-text document.txt    # Summarization
 ./polish-text document.txt       # Polishing
-./smart-filename document.txt    # Generate filename (with rename prompt)
-./smart-filename document.txt -y # Generate and rename without prompt
+./smart-filename receipt.pdf     # Analyze and prompt to rename
+./smart-filename -y invoice.pdf  # Analyze and auto-rename
+./smart-filename --clipboard     # Generate from clipboard
 #+END_SRC
 
 * Command Line Options
 
 ** AI Model Selection
 - =-l|--ollama[=model_name]= : Use Ollama API (default: mistral)
-- =-o|--openai[=model_name]= : Use OpenAI API (default: gpt-4)
+- =-o|--openai[=model_name]= : Use OpenAI API (default: gpt-5)
 - =--claude= : Use Claude API
 - =--preprompt[=]PRE_PROMPT= : Custom pre-prompt text
 
@@ -138,6 +140,8 @@ All scripts automatically handle various file types:
 - =filename= : Read from file
 - =URL= : Read from web page (http/https)
 - =STDIN= : Read from pipe (default)
+
+*Note:* =smart-filename= only accepts file paths or =--clipboard= (no STDIN, URL, or selection support).
 
 ** Output Destinations  
 - =-n|--notification= : Show as system notification
@@ -216,6 +220,16 @@ export CLAUDE_API_KEY="sk-ant-12340000000000000000000000000000000000000000000000
 MIT
 
 * Changelog
+
+** v3.3.0 - 2025-11-25
+- Simplified smart-filename to focus on core use case: analyzing files
+- Removed STDIN, URL, and selection input support from smart-filename
+- Removed unnecessary output options (dialog, notification, type) from smart-filename documentation
+- Fixed pre-prompt typo in smart-filename: "smarname" → "smartname"
+- Updated default OpenAI model from gpt-4 to gpt-5
+- Simplified smart-filename help text to emphasize basic usage
+- Added input validation requiring file or --clipboard for smart-filename
+- Updated README examples to show simplified smart-filename usage
 
 ** v3.2.0 - 2025-11-25
 - Added intelligent file type detection and validation

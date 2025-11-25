@@ -11,7 +11,7 @@ fi
 # Default configuration
 active_function=openai_summarize
 ollama_model=mistral
-openai_model=gpt-4
+openai_model=gpt-5
 source=STDIN
 source_identifier=""
 output_mode=STDOUT
