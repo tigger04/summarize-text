@@ -9,8 +9,8 @@
 - use `docs/` folder for project documentation
 
 ## Documentation
-- use the README.org file to provide a 'Quickstart' explaining the project and how to get started to a new developer/user, with links to more detailed documentation in `docs/`
-- there should not be a README.md if there is a README.org
+- use the README file to provide a 'Quickstart' explaining the project and how to get started to a new developer/user, with links to more detailed documentation in `docs/`
+- there must not be both a README.md and README.org
 - when referencing local paths, instead of absolute paths use relative to `$HOME` using `~` notation, e.g. `~/code/www/omni/` instead of `/Users/tigger/code/www/omni/`
 
 ## Coding
