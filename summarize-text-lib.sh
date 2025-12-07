@@ -76,6 +76,9 @@ openai() {
 
 # Claude API handler
 claude() {
+   # shellcheck source=/dev/null
+   source ~/.ssh/.claude-api-key.sh
+
    info "Summarizing text with Claude using API"
    
    if [ -z "$CLAUDE_API_KEY" ]; then
