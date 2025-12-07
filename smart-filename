@@ -79,19 +79,19 @@ parse_smart_filename_arguments() {
          ;;
       # AI Model options
       -l* | --ollama*)
-         active_function=ollama_summarize
+         active_function=ollama
          if [[ $1 =~ =(.*)$ ]]; then
             ollama_model="${BASH_REMATCH[1]}"
          fi
          ;;
       -o* | --openai*)
-         active_function=openai_summarize
+         active_function=openai
          if [[ $1 =~ =(.*)$ ]]; then
             openai_model="${BASH_REMATCH[1]}"
          fi
          ;;
       --claude)
-         active_function=claude_summarize
+         active_function=claude
          ;;
       --preprompt*)
          if [[ $1 =~ =(.*)$ ]]; then

@@ -1,12 +1,12 @@
 #+TITLE: Summarize Text
 #+AUTHOR: Your Name
 #+DATE: 2025-08-23
-#+DESCRIPTION: A bash script suite to summarize, polish, and generate smart filenames for text using various AI APIs
+#+DESCRIPTION: A bash script to summarize text using various AI APIs
 #+KEYWORDS: bash, AI, summarization, ollama, openai, claude
 
-A collection of bash scripts that process text using Ollama (local), OpenAI, or Claude APIs. They read text from multiple sources (STDIN, files, URLs, clipboard, or selection) and output results to STDOUT, notifications, dialogs, clipboard, or typed automatically.
+A bash script that either summarizes or proofreads text using Ollama (local), OpenAI, or Claude APIs. It reads text from multiple sources (STDIN, files, URLs, clipboard, or selection) and outputs results to STDOUT, notifications, dialogs, clipboard, or typed automatically.
 
-The suite operates in three modes: summarization (=summarize-text=), polishing (=polish-text=), or smart filename generation (=smart-filename=).
+The script operates in one of two modes: summarization when run as =summarize-text= or polishing when run as =polish-text=.
 
 * Quick Start
 ** Installation
@@ -22,8 +22,6 @@ Clone the repo and add the directory to your PATH.
 
 *** Optional (for enhanced functionality)
 - html2text (for URL processing)
-- poppler (provides pdftotext for PDF file processing)
-- pandoc (for processing docx, odt, rtf, and other document formats)
 - pbcopy/pbpaste (macOS) or xclip/xsel (Linux) for clipboard operations
 - notify command for notifications (falls back to osascript on macOS)
 - dialog command for dialogs (falls back to osascript on macOS)
@@ -32,7 +30,7 @@ Clone the repo and add the directory to your PATH.
 ** Install (macOS)
 
 #+BEGIN_SRC bash
-brew install curl jq html2text poppler pandoc
+brew install curl jq html2text
 brew install --cask ollama
 brew services start ollama
 ollama pull mistral
@@ -42,7 +40,7 @@ ollama pull mistral
 
 #+BEGIN_SRC bash
 sudo apt update
-sudo apt install curl jq html2text poppler-utils pandoc
+sudo apt install curl jq html2text
 #+END_SRC
 
 - [[https://ollama.com/download/linux][Follow Ollama install instructions here]]
@@ -75,62 +73,35 @@ cat document.txt | ./summarize-text           # stdin
 # URL and AI options
 ./summarize-text https://example.com --claude
 ./polish-text document.txt --ollama=llama2
-
-# Smart filename mode
-./smart-filename receipt.pdf                  # generate filename with rename prompt
-./smart-filename document.txt -y              # auto-rename without confirmation
-./smart-filename --clipboard                  # generate from clipboard (no rename)
 #+END_SRC
 
-* Triple Functionality
+* Dual Functionality
 
-This suite provides three different modes with separate scripts:
+This script provides two different modes depending on how it's invoked:
 
-** Summarize Mode
-When run as =summarize-text=:
+** Summarize Mode (default)
+When run as =summarize-text= or =summarize=:
 - Summarizes text in bullet points
 - Calls out pertinent themes and interesting points
 - Default prompt: "Briefly summarize the following text in a few bullet points, preserving the original meaning. At the end, call out themes that seem pertinent or interesting."
 - Prompt is configurable
 
 ** Polish Mode
-When run as =polish-text=:
+When run as =polish-text= or =polish=:
 - Takes scattered or unclear text and structures it clearly
 - Improves grammar, clarity, and professional tone
 - Default prompt: "Please sharpen and improve the language and message of the following text, preserving key points and meaning. Keep things respectful, accurate, brief and clear. Utilize bullet points if appropriate. Never use emojis."
-- Prompt is configurable
-
-** Smart Filename Mode
-When run as =smart-filename=:
-- Analyzes a file and generates a smart, descriptive filename
-- For receipts/invoices: includes date and amount (YYYY-MM-DD-X.XX-filename)
-- For other content: includes date (filename-YY-MM-DD or filename-YY-MM)
-- Offers to rename the file with simple y/n prompt
-- Use =-y= or =--yes= flag to automatically rename without confirmation
-- Input: file path (required) or =--clipboard=
-- Prompt is configurable
-
-*** Supported File Types
-All scripts automatically handle various file types:
-- *Text files*: txt, md, json, xml, etc. (processed directly)
-- *PDF files*: Requires =pdftotext= from poppler/poppler-utils
-- *Document files*: docx, odt, rtf, etc. (requires =pandoc=)
-- Unsupported binary formats are rejected with helpful error messages
-
-#+BEGIN_SRC bash
-# Use any mode
+- Prompt is configurable#+BEGIN_SRC bash
+# Use either mode
 ./summarize-text document.txt    # Summarization
 ./polish-text document.txt       # Polishing
-./smart-filename receipt.pdf     # Analyze and prompt to rename
-./smart-filename -y invoice.pdf  # Analyze and auto-rename
-./smart-filename --clipboard     # Generate from clipboard
 #+END_SRC
 
 * Command Line Options
 
 ** AI Model Selection
 - =-l|--ollama[=model_name]= : Use Ollama API (default: mistral)
-- =-o|--openai[=model_name]= : Use OpenAI API (default: gpt-5)
+- =-o|--openai[=model_name]= : Use OpenAI API (default: gpt-4)
 - =--claude= : Use Claude API
 - =--preprompt[=]PRE_PROMPT= : Custom pre-prompt text
 
@@ -140,8 +111,6 @@ All scripts automatically handle various file types:
 - =filename= : Read from file
 - =URL= : Read from web page (http/https)
 - =STDIN= : Read from pipe (default)
-
-*Note:* =smart-filename= only accepts file paths or =--clipboard= (no STDIN, URL, or selection support).
 
 ** Output Destinations  
 - =-n|--notification= : Show as system notification
@@ -221,45 +190,6 @@ MIT
 
 * Changelog
 
-** v3.3.0 - 2025-11-25
-- Simplified smart-filename to focus on core use case: analyzing files
-- Removed STDIN, URL, and selection input support from smart-filename
-- Removed unnecessary output options (dialog, notification, type) from smart-filename documentation
-- Fixed pre-prompt typo in smart-filename: "smarname" → "smartname"
-- Updated default OpenAI model from gpt-4 to gpt-5
-- Simplified smart-filename help text to emphasize basic usage
-- Added input validation requiring file or --clipboard for smart-filename
-- Updated README examples to show simplified smart-filename usage
-
-** v3.2.0 - 2025-11-25
-- Added intelligent file type detection and validation
-- Added PDF text extraction support using pdftotext (requires poppler/poppler-utils)
-- Added document format support (docx, odt, rtf) using pandoc as fallback
-- Text files (txt, md, json, xml) continue to be processed directly
-- Unsupported binary formats are rejected with helpful error messages
-- Added comprehensive test coverage for file type handling
-- Updated dependencies in README for poppler and pandoc
-- Added prepare_file_content() function to summarize-text-lib.sh
-
-** v3.1.0 - 2025-11-25
-- Reverted bash requirement to 3.2+ for public project compatibility
-- Fixed bash 4.0+ case modification syntax (${var,,}) to bash 3.2 compatible ([yY])
-- Updated version check from 5.0+ to 3.2+ in library
-- Maintains all v3.0.0 functionality with broader compatibility
-- Per docs/patterns.md: public projects maintain bash 3.2 compatibility
-
-** v3.0.0 - 2025-11-25
-- Reorganized project structure: split monolithic script into modular architecture
-- Created summarize-text-lib.sh shared library for reusable functions
-- Replaced symlinks with separate script files (summarize-text, polish-text, smart-filename)
-- Added smart-filename mode with automatic file renaming capability
-- Added -y/--yes flag to smart-filename for non-interactive renaming
-- Temporarily updated bash requirement to 5.0+ (reverted to 3.2+ in v3.1.0)
-- Fixed OpenAI model default to gpt-4 (was incorrectly gpt-5 in code)
-- Added bats-core test suite with 'make test' support
-- Improved code maintainability with separation of concerns
-- Each script now has its own execution logic (removed shared doIt function)
-
 ** v2.0.0 - 2025-10-15
 - Added text polishing functionality (polish-text mode)
 - Added clipboard input support (--clipboard/-c)
@@ -285,6 +215,6 @@ MIT
 
 ** v1.0.0 - 2025-08-23
 - Initial release
-- Bash 3.2+ compatibility (temporarily changed to 5.0+ in v3.0.0, reverted in v3.1.0)
+- Amended for Bash 3.2+ compatibility
 - Support for Ollama, OpenAI, and Claude APIs
 - STDIN text processing

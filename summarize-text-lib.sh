@@ -9,7 +9,7 @@ if [ "${BASH_VERSINFO[0]}" -lt 3 ] || ([ "${BASH_VERSINFO[0]}" -eq 3 ] && [ "${B
 fi
 
 # Default configuration
-active_function=openai_summarize
+active_function=claude
 ollama_model=mistral
 openai_model=gpt-5
 source=STDIN
@@ -22,7 +22,7 @@ info() {
 }
 
 # Ollama API handler
-ollama_summarize() {
+ollama() {
    if ! command -v ollama >/dev/null 2>&1; then
       echo "‼️ Ollama not found. Is it installed?" >&2
       exit 1
@@ -53,7 +53,7 @@ ollama_summarize() {
 }
 
 # OpenAI API handler
-openai_summarize() {
+openai() {
    # shellcheck source=/dev/null
    source ~/.ssh/.openai-api-key.sh
 
@@ -75,11 +75,30 @@ openai_summarize() {
 }
 
 # Claude API handler
-claude_summarize() {
-   command -v claude >/dev/null 2>&1 || exit 1
-   # shellcheck source=/dev/null
-   source ~/.ssh/.claude-api-key.sh
-   result=$(claude "$prompt")
+claude() {
+   info "Summarizing text with Claude using API"
+   
+   if [ -z "$CLAUDE_API_KEY" ]; then
+      echo "‼️ CLAUDE_API_KEY environment variable not set" >&2
+      exit 1
+   fi
+
+   result=$(curl https://api.anthropic.com/v1/messages \
+      -s \
+      -H "x-api-key: $CLAUDE_API_KEY" \
+      -H "anthropic-version: 2023-06-01" \
+      -H "Content-Type: application/json" \
+      -d "$(jq -n --arg prompt "$prompt" \
+         '{
+            model: "claude-opus-4-20250514",
+            max_tokens: 4096,
+            messages: [
+              {
+                role: "user",
+                content: $prompt
+               }
+            ]
+      }')" | jq -r '.content[0].text')
    output_result "$result"
 }
 
