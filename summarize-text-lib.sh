@@ -9,7 +9,7 @@ if [ "${BASH_VERSINFO[0]}" -lt 3 ] || ([ "${BASH_VERSINFO[0]}" -eq 3 ] && [ "${B
 fi
 
 # Default configuration
-active_function=claude
+active_function=openai
 ollama_model=mistral
 openai_model=gpt-5
 source=STDIN
