@@ -26,18 +26,19 @@ Utilize any other common abbreviations as appropriate in this pattern."
 # Flag for skipping confirmation
 skip_confirmation=false
 rename_original=""
+files_to_process=()
 
 display_help_text_and_die() {
    cat - <<EOM
 USAGE
 -----
-   $cmd_base [-y] [OPTIONS] FILENAME
+   $cmd_base [-y] [OPTIONS] FILENAME...
    $cmd_base [OPTIONS] --clipboard
 
 WTF
 ---
-   Analyze a file and generate a smart filename. Offers to rename the file
-   with a simple y/n prompt, or use -y to automatically rename it.
+   Analyze file(s) and generate smart filenames. Offers to rename the files
+   with a simple y/n prompt, or use -y to automatically rename them.
 
 OPTIONS
 -------
@@ -45,23 +46,21 @@ OPTIONS
       -l|--ollama[=model]   Use Ollama API (default: $ollama_model)
       -o|--openai[=model]   Use OpenAI API (default: $openai_model)
       --claude              Use Claude API
-      --preprompt=TEXT      Custom pre-prompt
+      --prompt=TEXT         Custom prompt
 
    Input:
       -c|--clipboard        Read from clipboard instead of file
-
-   Output:
-      -p|--paste            Copy result to clipboard
 
    Rename:
       -y|--yes              Auto-rename without confirmation
 
 EXAMPLES
 --------
-   $cmd_base receipt.pdf              # Analyze and prompt to rename
-   $cmd_base -y invoice.pdf           # Analyze and auto-rename
-   $cmd_base --clipboard              # Generate from clipboard
-   $cmd_base document.txt --claude    # Use Claude model
+   $cmd_base receipt.pdf                      # Analyze and prompt to rename
+   $cmd_base -y invoice.pdf                   # Analyze and auto-rename
+   $cmd_base -y file1.pdf file2.txt file3.md  # Process multiple files
+   $cmd_base --clipboard                      # Generate from clipboard
+   $cmd_base document.txt --claude            # Use Claude model
 
 EOM
    exit 1
@@ -93,7 +92,7 @@ parse_smart_filename_arguments() {
       --claude)
          active_function=claude
          ;;
-      --preprompt*)
+      --prompt*)
          if [[ $1 =~ =(.*)$ ]]; then
             pre_prompt="${BASH_REMATCH[1]}"
          else
@@ -105,15 +104,10 @@ parse_smart_filename_arguments() {
       -c | --clipboard)
          source=CLIPBOARD
          ;;
-      # Output options
-      -p | --paste)
-         output_mode=PASTE
-         ;;
       # File input (default case) - store for potential rename
       *)
          source=FILE
-         source_identifier="$1"
-         rename_original="$1"
+         files_to_process+=("$1")
          ;;
       esac
       shift
@@ -174,10 +168,10 @@ fi
 # Parse command-line arguments
 parse_smart_filename_arguments "$@"
 
-# Validate input: require either file or clipboard
+# Validate input: require either file(s) or clipboard
 if [[ "$source" == "STDIN" ]]; then
-   echo "‼️ Error: $cmd_base requires a filename or --clipboard option" >&2
-   echo "Usage: $cmd_base [-y] [OPTIONS] FILENAME" >&2
+   echo "‼️ Error: $cmd_base requires filename(s) or --clipboard option" >&2
+   echo "Usage: $cmd_base [-y] [OPTIONS] FILENAME..." >&2
    echo "       $cmd_base [OPTIONS] --clipboard" >&2
    echo "Run '$cmd_base --help' for more information." >&2
    exit 1
@@ -188,7 +182,23 @@ output_result() {
    smart_filename_output "$1"
 }
 
-# Execute processing and run the active function
-execute_processing
-info "$cmd_base using $active_function"
-$active_function
+# Process files
+if [[ "$source" == "FILE" ]]; then
+   # Process each file
+   for file in "${files_to_process[@]}"; do
+      source_identifier="$file"
+      rename_original="$file"
+      
+      # Execute processing and run the active function
+      execute_processing
+      hline "$cmd_base using $active_function"
+      $active_function
+      
+      echo "" >&2  # Add blank line between files
+   done
+else
+   # Process clipboard
+   execute_processing
+   hline "$cmd_base using $active_function"
+   $active_function
+fi

@@ -105,5 +105,5 @@ parse_common_arguments "$@"
 
 # Execute processing and run the active function
 execute_processing
-info "$cmd_base using $active_function"
+hline "$cmd_base using $active_function"
 $active_function

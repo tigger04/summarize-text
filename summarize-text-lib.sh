@@ -17,8 +17,8 @@ source_identifier=""
 output_mode=STDOUT
 
 # Simple info function for logging
-info() {
-   echo "🔷️🔷️🔷️ $* 🔷️🔷️🔷️" >&2
+hline() {
+   echo "️🔷️ $*" >&2
 }
 
 # Ollama API handler
@@ -37,7 +37,7 @@ ollama() {
       read -p "Download '$ollama_model'? (y/N): " -n 1 -r >&2
       echo >&2
       if [[ "$REPLY" == [yY] ]]; then
-         info "Downloading model: $ollama_model"
+         hline "Downloading model: $ollama_model"
          ollama pull "$ollama_model" || {
             echo "❌ Failed to download model '$ollama_model'." >&2
             exit 1
@@ -79,7 +79,7 @@ claude() {
    # shellcheck source=/dev/null
    source ~/.ssh/.claude-api-key.sh
 
-   info "Summarizing text with Claude using API"
+   hline "Summarizing text with Claude using API"
    
    if [ -z "$CLAUDE_API_KEY" ]; then
       echo "‼️ CLAUDE_API_KEY environment variable not set" >&2
