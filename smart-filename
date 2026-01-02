@@ -129,7 +129,7 @@ smart_filename_output() {
 
       # If there's an extension and it's not the whole filename, add it
       if [[ "$extension" != "$rename_original" && -n "$extension" ]]; then
-         new_filename="${generated_name}.${extension}"
+         new_filename="${generated_name}.${extension,,}"
       else
          new_filename="$generated_name"
       fi
