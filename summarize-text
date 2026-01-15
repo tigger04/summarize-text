@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+
+set -e -o pipefail
+shopt -s dotglob
+
+# Source the shared library - resolve symlinks to find actual script location
+script="${BASH_SOURCE[0]}"
+while [[ -L "$script" ]]; do
+    script_dir="$(cd -P "$(dirname "$script")" && pwd)"
+    script="$(readlink "$script")"
+    [[ $script != /* ]] && script="$script_dir/$script"
+done
+script_dir="$(cd -P "$(dirname "$script")" && pwd)"
+# shellcheck source=./summarize-text-lib.sh
+source "$script_dir/summarize-text-lib.sh"
+
+# Script-specific configuration
+cmd_base=$(basename "$0")
+pre_prompt="Briefly summarize the following text in a few bullet points, preserving the original meaning. At the end, call out themes that seem pertinent or interesting."
+
+display_help_text_and_die() {
+   cat - <<EOM
+USAGE
+-----
+   $cmd_base [OPTIONS] INPUT [OUTPUT]
+
+WTF
+---
+   Summarize a piece of text using AI.
+
+WHERE
+-----
+   INPUT (mandatory) can be:
+     - a filename
+     - a URL (starting with http:// or https://)
+     - '-' i.e. from standard input (stdin)
+     - the clipboard (see opts)
+     - selected text (see opts)
+   OUTPUTS
+     - to STDOUT (default)
+     - to a file using redirection (>)
+     - pasted (see opts) by triggering CMD+V / CTRL+V (depending on OS)
+     - typed (see opts)
+     - a notification (see opts)
+     - a dialog (see opts)
+OPTIONS
+-------
+   AI MODELS
+
+   -l | --ollama[=model_name]: Use the Ollama API (with given model if specified)
+                               (requires ollama launchd service to be running)
+   -o | --openai[=model_name]: Use the OpenAI API (with given model if specified)
+   --claude:  Use the Claude API
+   --preprompt[=]PRE_PROMPT: Use custom PRE_PROMPT
+
+   INPUT
+      -c / --clipboard
+      -s / --selection (0.3s delay for copy operation)
+
+   OUTPUT
+      -n / --notification # using notify command (or macOS osascript fallback)
+      -d / --dialog # using dialog command (or macOS osascript fallback)
+      -t / --type # using mactype command
+      -p / --paste # copies to clipboard (macOS/Linux compatible)
+
+EXAMPLES
+--------
+   # Input methods
+   cat document.txt | $cmd_base              # stdin
+   $cmd_base document.txt                    # file
+   $cmd_base --clipboard                     # clipboard
+   $cmd_base --selection                     # selection
+
+   # Output methods
+   $cmd_base document.txt                    # stdout (default)
+   $cmd_base document.txt --paste            # copy to clipboard
+   $cmd_base document.txt --notification     # system notification
+   $cmd_base --clipboard --dialog            # system dialog
+
+   # URL and AI options
+   $cmd_base https://example.com --claude
+   $cmd_base document.txt --ollama=llama2
+
+DEFAULTS
+--------
+   Active function: $active_function
+   Ollama model: $ollama_model
+   OpenAI model: $openai_model
+   Source: $source
+   Output mode: $output_mode
+   Pre-prompt:
+      "$pre_prompt"
+
+EOM
+   exit 1
+}
+
+# Handle help flag
+if [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
+   display_help_text_and_die
+fi
+
+# Parse command-line arguments
+parse_common_arguments "$@"
+
+# Execute processing and run the active function
+execute_processing
+hline "$cmd_base using $active_function"
+$active_function
