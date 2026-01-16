@@ -9,29 +9,10 @@ A bash script that either summarizes or proofreads text using Ollama (local), Op
 The script operates in one of two modes: summarization when run as =summarize-text= or polishing when run as =polish-text=.
 
 * Quick Start
-** Installation
-*** Homebrew (Recommended)
+
 #+BEGIN_SRC bash
 brew tap tigger04/tap
 brew install summarize-text
-#+END_SRC
-
-*** Development Installation
-For development or manual installation:
-
-#+BEGIN_SRC bash
-# Clone the repository
-git clone https://github.com/tigger04/summarize-text.git
-cd summarize-text
-
-# Run tests
-make test
-
-# Install to /usr/local/bin (requires sudo)
-sudo make install
-
-# Uninstall
-sudo make uninstall
 #+END_SRC
 
 ** Dependencies
@@ -204,6 +185,25 @@ Example =.claude-api-key.sh= file:
 #!/bin/bash
 export CLAUDE_API_KEY_NAME="my-claude-key"
 export CLAUDE_API_KEY="sk-ant-12340000000000000000000000000000000000000000000000000000000000000"
+#+END_SRC
+
+* Development Installation
+
+For development or manual installation:
+
+#+BEGIN_SRC bash
+# Clone the repository
+git clone https://github.com/tigger04/summarize-text.git
+cd summarize-text
+
+# Run tests
+make test
+
+# Install to /usr/local/bin (requires sudo)
+sudo make install
+
+# Uninstall
+sudo make uninstall
 #+END_SRC
 
 * License
