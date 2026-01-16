@@ -1,0 +1,236 @@
+#+TITLE: Summarize Text
+#+AUTHOR: Your Name
+#+DATE: 2025-08-23
+#+DESCRIPTION: A bash script to summarize text using various AI APIs
+#+KEYWORDS: bash, AI, summarization, ollama, openai, claude
+
+A bash script that either summarizes or proofreads text using Ollama (local), OpenAI, or Claude APIs. It reads text from multiple sources (STDIN, files, URLs, clipboard, or selection) and outputs results to STDOUT, notifications, dialogs, clipboard, or typed automatically.
+
+The script operates in one of two modes: summarization when run as =summarize-text= or polishing when run as =polish-text=.
+
+* Quick Start
+** Installation
+#+BEGIN_SRC bash
+# Clone the repository
+git clone https://github.com/tigger04/summarize-text.git
+cd summarize-text
+
+# Test the installation
+make test
+
+# Install (auto-detects Homebrew prefix if available)
+make install
+
+# Or install to custom location
+make install PREFIX=~/.local
+
+# Or simply add the directory to your PATH
+export PATH="$PATH:$(pwd)"
+#+END_SRC
+
+** Dependencies
+*** Required
+- At least one of
+  - Ollama installed with Mistral (or other models)
+  - An API key for OpenAI or Claude
+- curl
+- jq
+
+*** Optional (for enhanced functionality)
+- html2text (for URL processing)
+- pbcopy/pbpaste (macOS) or xclip/xsel (Linux) for clipboard operations
+- notify command for notifications (falls back to osascript on macOS)
+- dialog command for dialogs (falls back to osascript on macOS)
+- mactype command for automatic typing
+
+** Install (macOS)
+
+#+BEGIN_SRC bash
+brew install curl jq html2text
+brew install --cask ollama
+brew services start ollama
+ollama pull mistral
+#+END_SRC
+
+** Install (Linux - Debian/Ubuntu)
+
+#+BEGIN_SRC bash
+sudo apt update
+sudo apt install curl jq html2text
+#+END_SRC
+
+- [[https://ollama.com/download/linux][Follow Ollama install instructions here]]
+
+then
+#+BEGIN_SRC bash
+ollama pull mistral
+ollama serve
+#+END_SRC
+
+* Usage
+
+The script accepts input from multiple sources and can output results in various ways.
+
+** Basic Examples
+
+#+BEGIN_SRC bash
+# Input methods
+cat document.txt | ./summarize-text           # stdin
+./summarize-text document.txt                 # file
+./summarize-text --clipboard                  # clipboard
+./polish-text --selection                     # selection (polish mode)
+
+# Output methods  
+./summarize-text document.txt                 # stdout (default)
+./summarize-text document.txt --paste         # copy to clipboard
+./polish-text document.txt --notification     # system notification
+./summarize-text --clipboard --dialog         # system dialog
+
+# URL and AI options
+./summarize-text https://example.com --claude
+./polish-text document.txt --ollama=llama2
+#+END_SRC
+
+* Dual Functionality
+
+This script provides two different modes depending on how it's invoked:
+
+** Summarize Mode (default)
+When run as =summarize-text= or =summarize=:
+- Summarizes text in bullet points
+- Calls out pertinent themes and interesting points
+- Default prompt: "Briefly summarize the following text in a few bullet points, preserving the original meaning. At the end, call out themes that seem pertinent or interesting."
+- Prompt is configurable
+
+** Polish Mode
+When run as =polish-text= or =polish=:
+- Takes scattered or unclear text and structures it clearly
+- Improves grammar, clarity, and professional tone
+- Default prompt: "Please sharpen and improve the language and message of the following text, preserving key points and meaning. Keep things respectful, accurate, brief and clear. Utilize bullet points if appropriate. Never use emojis."
+- Prompt is configurable#+BEGIN_SRC bash
+# Use either mode
+./summarize-text document.txt    # Summarization
+./polish-text document.txt       # Polishing
+#+END_SRC
+
+* Command Line Options
+
+** AI Model Selection
+- =-l|--ollama[=model_name]= : Use Ollama API (default: mistral)
+- =-o|--openai[=model_name]= : Use OpenAI API (default: gpt-4)
+- =--claude= : Use Claude API
+- =--preprompt[=]PRE_PROMPT= : Custom pre-prompt text
+
+** Input Sources
+- =-c|--clipboard= : Read from system clipboard
+- =-s|--selection= : Read from selection (prompts for copy + 0.3s delay)
+- =filename= : Read from file
+- =URL= : Read from web page (http/https)
+- =STDIN= : Read from pipe (default)
+
+** Output Destinations  
+- =-n|--notification= : Show as system notification
+- =-d|--dialog= : Show in system dialog box
+- =-t|--type= : Type result automatically (requires mactype)
+- =-p|--paste= : Copy result to clipboard
+- =STDOUT= : Print to terminal (default)
+
+** Usage Patterns
+#+BEGIN_SRC bash
+# Get help
+./summarize-text --help
+
+# Basic usage
+./summarize-text file.txt
+cat file.txt | ./summarize-text
+
+# Input options
+./summarize-text --clipboard --openai
+./summarize-text --selection --ollama=llama2
+
+# Output options  
+./summarize-text file.txt --notification
+./summarize-text --clipboard --paste
+
+# Combined workflows
+./summarize-text --selection --claude --dialog
+#+END_SRC
+
+* Configuration
+
+** Ollama Setup
+1. Install Ollama (see Quick Start above)
+2. Pull additional models if desired:
+#+BEGIN_SRC bash
+# Default model (already pulled in quick start)
+ollama pull mistral
+
+# Other popular models
+ollama pull llama2
+ollama pull phi
+ollama pull codellama
+#+END_SRC
+
+** OpenAI Setup
+1. Get your API key from https://platform.openai.com/
+2. Create the key file:
+#+BEGIN_SRC bash
+echo 'export OPENAI_API_KEY="your-api-key-here"' > ~/.ssh/.openai-api-key.sh
+chmod 600 ~/.ssh/.openai-api-key.sh
+#+END_SRC
+
+Example =.openai-api-key.sh= file:
+#+BEGIN_SRC bash
+export OPENAI_API_KEY="sk-000000000000000000000000000000000000000000000000"
+#+END_SRC
+
+** Claude Setup
+1. Install Claude CLI: https://github.com/anthropics/claude-cli
+2. Set up your API key:
+#+BEGIN_SRC bash
+echo 'export CLAUDE_API_KEY_NAME="your-api-key-name"' > ~/.ssh/.claude-api-key.sh
+echo 'export CLAUDE_API_KEY="your-api-key"' >> ~/.ssh/.claude-api-key.sh
+chmod 600 ~/.ssh/.claude-api-key.sh
+#+END_SRC
+
+Example =.claude-api-key.sh= file:
+#+BEGIN_SRC bash
+#!/bin/bash
+export CLAUDE_API_KEY_NAME="my-claude-key"
+export CLAUDE_API_KEY="sk-ant-12340000000000000000000000000000000000000000000000000000000000000"
+#+END_SRC
+
+* License
+
+MIT
+
+* Changelog
+
+** v2.0.0 - 2025-10-15
+- Added text polishing functionality (polish-text mode)
+- Added clipboard input support (--clipboard/-c)
+- Added selection input support (--selection/-s) with 0.3s delay
+- Added notification output (--notification/-n) with system fallbacks
+- Added dialog output (--dialog/-d) with system fallbacks
+- Added paste output (--paste/-p) for clipboard workflows
+- Added type output (--type/-t) for automatic typing
+- Fixed OpenAI model from gpt-5 to gpt-4
+- Fixed Claude option conflict (--claude only, freed -c for clipboard)
+- Improved prompt construction with proper newline handling
+- Enhanced cross-platform clipboard support (macOS/Linux)
+- Improved utility detection using command -v instead of hardcoded paths
+- Updated help text and examples
+- Refactored output handling with unified output_result() function
+
+** v1.1.0 - 2025-08-23
+- Added support for file input
+- Added support for URL input with automatic HTML conversion
+- Added support for custom Ollama models
+- Improved argument parsing
+- Enhanced logging output
+
+** v1.0.0 - 2025-08-23
+- Initial release
+- Amended for Bash 3.2+ compatibility
+- Support for Ollama, OpenAI, and Claude APIs
+- STDIN text processing
