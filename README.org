@@ -10,22 +10,28 @@ The script operates in one of two modes: summarization when run as =summarize-te
 
 * Quick Start
 ** Installation
+*** Homebrew (Recommended)
+#+BEGIN_SRC bash
+brew tap tigger04/tap
+brew install summarize-text
+#+END_SRC
+
+*** Development Installation
+For development or manual installation:
+
 #+BEGIN_SRC bash
 # Clone the repository
 git clone https://github.com/tigger04/summarize-text.git
 cd summarize-text
 
-# Test the installation
+# Run tests
 make test
 
-# Install (auto-detects Homebrew prefix if available)
-make install
+# Install to /usr/local/bin (requires sudo)
+sudo make install
 
-# Or install to custom location
-make install PREFIX=~/.local
-
-# Or simply add the directory to your PATH
-export PATH="$PATH:$(pwd)"
+# Uninstall
+sudo make uninstall
 #+END_SRC
 
 ** Dependencies

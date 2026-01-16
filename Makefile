@@ -1,20 +1,21 @@
 #!/usr/bin/make -f
 # ABOUTME: Build configuration for summarize-text project
-# ABOUTME: Provides test targets and installation helpers
+# ABOUTME: Provides test targets and development installation
 
 .PHONY: test install uninstall clean help
-
-# Detect Homebrew prefix if available, otherwise use /usr/local
-PREFIX ?= $(shell if command -v brew >/dev/null 2>&1; then brew --prefix; else echo /usr/local; fi)
 
 # Default target
 help:
 	@echo "Available targets:"
 	@echo "  test      - Run all tests"
-	@echo "  install   - Install to $(PREFIX)/bin"
-	@echo "  uninstall - Remove installed files"
+	@echo "  install   - Development install to /usr/local/bin (requires sudo)"
+	@echo "  uninstall - Remove installed files (requires sudo)"
 	@echo "  clean     - Clean up test artifacts"
 	@echo "  help      - Show this help"
+	@echo ""
+	@echo "For production installation, use Homebrew:"
+	@echo "  brew tap tigger04/tap"
+	@echo "  brew install summarize-text"
 
 # Run tests
 test:
@@ -24,23 +25,22 @@ test:
 	@./test/test_integration.sh
 	@echo "All tests passed!"
 
-# Install to system
+# Development install (requires sudo)
 install: summarize-text
-	@echo "Installing to $(PREFIX)..."
-	@install -d $(PREFIX)/bin
-	@install -d $(PREFIX)/share/summarize-text
-	@install -m 755 summarize-text $(PREFIX)/bin/
-	@install -m 644 summarize-text-lib.sh $(PREFIX)/share/summarize-text/
-	@echo "Installation complete: $(PREFIX)/bin/summarize-text"
-	@if ! echo "$$PATH" | grep -q "$(PREFIX)/bin"; then \
-		echo "WARNING: $(PREFIX)/bin is not in your PATH"; \
-	fi
+	@echo "Installing to /usr/local/bin (requires sudo)..."
+	@echo "Creating directories..."
+	@sudo install -d /usr/local/bin
+	@sudo install -d /usr/local/share/summarize-text
+	@echo "Installing files..."
+	@sudo install -m 755 summarize-text /usr/local/bin/
+	@sudo install -m 644 summarize-text-lib.sh /usr/local/share/summarize-text/
+	@echo "Installation complete: /usr/local/bin/summarize-text"
 
-# Uninstall from system
+# Uninstall (requires sudo)
 uninstall:
-	@echo "Uninstalling from $(PREFIX)..."
-	@rm -f $(PREFIX)/bin/summarize-text
-	@rm -rf $(PREFIX)/share/summarize-text
+	@echo "Uninstalling from /usr/local (requires sudo)..."
+	@sudo rm -f /usr/local/bin/summarize-text
+	@sudo rm -rf /usr/local/share/summarize-text
 	@echo "Uninstall complete"
 
 # Build the executable (ensures it exists and is executable)
