@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# summarize-text library - shared functions for text summarization tools
+# ABOUTME: Library for text summarization tools with AI model support
+# ABOUTME: Provides OpenAI, Claude, and Ollama integration with flexible configuration
 
 # Check for bash v3.2+
 if [ "${BASH_VERSINFO[0]}" -lt 3 ] || ([ "${BASH_VERSINFO[0]}" -eq 3 ] && [ "${BASH_VERSINFO[1]}" -lt 2 ]); then
@@ -8,23 +9,84 @@ if [ "${BASH_VERSINFO[0]}" -lt 3 ] || ([ "${BASH_VERSINFO[0]}" -eq 3 ] && [ "${B
    exit 1
 fi
 
-# Default configuration
-active_function=openai
-ollama_model=mistral
-openai_model=gpt-5
-source=STDIN
-source_identifier=""
-output_mode=STDOUT
+# Load configuration
+load_config() {
+   local config_file="$HOME/.config/summarize-text/config"
+
+   # Set defaults
+   active_function=""
+   ollama_model="mistral"
+   openai_model="gpt-4o-mini"
+   claude_model="claude-3-5-sonnet-20241022"
+   source=STDIN
+   source_identifier=""
+   output_mode=STDOUT
+
+   # Load from config file if exists
+   if [[ -f "$config_file" ]]; then
+      source "$config_file"
+   fi
+
+   # Override with environment variables if set
+   [[ -n "${OPENAI_API_KEY:-}" ]] && openai_available=true || openai_available=false
+   [[ -n "${CLAUDE_API_KEY:-}" ]] && claude_available=true || claude_available=false
+   [[ -n "${OLLAMA_API_URL:-}" ]] && ollama_available=true || ollama_available=false
+
+   # Check if ollama is running locally
+   if [[ -z "${OLLAMA_API_URL:-}" ]] && command -v ollama >/dev/null 2>&1; then
+      if ollama list >/dev/null 2>&1; then
+         ollama_available=true
+      fi
+   fi
+
+   # Auto-detect default if not set
+   if [[ -z "$active_function" ]]; then
+      if [[ "$openai_available" == true ]]; then
+         active_function="openai"
+      elif [[ "$claude_available" == true ]]; then
+         active_function="claude"
+      elif [[ "$ollama_available" == true ]]; then
+         active_function="ollama"
+      else
+         echo "⚠️ No AI service available. Please set OPENAI_API_KEY, CLAUDE_API_KEY, or ensure Ollama is running." >&2
+         echo "You can also create a config file at ~/.config/summarize-text/config" >&2
+         exit 1
+      fi
+   fi
+
+   # Override default from config or env
+   [[ -n "${DEFAULT_AI:-}" ]] && active_function="${DEFAULT_AI}"
+}
+
+# Initialize configuration
+load_config
 
 # Simple info function for logging
 hline() {
    echo "️🔷️ $*" >&2
 }
 
+info() {
+   echo "ℹ️ $*" >&2
+}
+
 # Ollama API handler
 ollama() {
+   # Check if using remote or local ollama
+   if [[ -n "${OLLAMA_API_URL:-}" ]]; then
+      # Use remote Ollama API
+      result=$(curl "${OLLAMA_API_URL}/api/generate" \
+         -s \
+         -d "$(jq -n --arg model "$ollama_model" --arg prompt "$prompt" \
+            '{model: $model, prompt: $prompt, stream: false}')" | jq -r '.response')
+      output_result "$result"
+      return
+   fi
+
+   # Use local ollama
    if ! command -v ollama >/dev/null 2>&1; then
-      echo "‼️ Ollama not found. Is it installed?" >&2
+      echo "❌ Ollama not found locally and OLLAMA_API_URL not set." >&2
+      echo "Install Ollama or set OLLAMA_API_URL in ~/.config/summarize-text/config" >&2
       exit 1
    fi
 
@@ -54,8 +116,20 @@ ollama() {
 
 # OpenAI API handler
 openai() {
-   # shellcheck source=/dev/null
-   source ~/.ssh/.openai-api-key.sh
+   # Check if API key is available
+   if [[ -z "${OPENAI_API_KEY:-}" ]]; then
+      # Try loading from legacy location
+      if [[ -f ~/.ssh/.openai-api-key.sh ]]; then
+         # shellcheck source=/dev/null
+         source ~/.ssh/.openai-api-key.sh
+      fi
+   fi
+
+   if [[ -z "${OPENAI_API_KEY:-}" ]]; then
+      echo "❌ OpenAI API key not found. Please set OPENAI_API_KEY environment variable." >&2
+      echo "Or add it to ~/.config/summarize-text/config as: export OPENAI_API_KEY='your-key'" >&2
+      exit 1
+   fi
 
    result=$(curl https://api.openai.com/v1/chat/completions \
       -s \
@@ -76,24 +150,31 @@ openai() {
 
 # Claude API handler
 claude() {
-   # shellcheck source=/dev/null
-   source ~/.ssh/.claude-api-key.sh
+   # Check if API key is available
+   if [[ -z "${CLAUDE_API_KEY:-}" ]]; then
+      # Try loading from legacy location
+      if [[ -f ~/.ssh/.claude-api-key.sh ]]; then
+         # shellcheck source=/dev/null
+         source ~/.ssh/.claude-api-key.sh
+      fi
+   fi
 
-   hline "Summarizing text with Claude using API"
-   
-   if [ -z "$CLAUDE_API_KEY" ]; then
-      echo "‼️ CLAUDE_API_KEY environment variable not set" >&2
+   if [[ -z "${CLAUDE_API_KEY:-}" ]]; then
+      echo "❌ Claude API key not found. Please set CLAUDE_API_KEY environment variable." >&2
+      echo "Or add it to ~/.config/summarize-text/config as: export CLAUDE_API_KEY='your-key'" >&2
       exit 1
    fi
+
+   hline "Summarizing text with Claude using API"
 
    result=$(curl https://api.anthropic.com/v1/messages \
       -s \
       -H "x-api-key: $CLAUDE_API_KEY" \
       -H "anthropic-version: 2023-06-01" \
       -H "Content-Type: application/json" \
-      -d "$(jq -n --arg prompt "$prompt" \
+      -d "$(jq -n --arg prompt "$prompt" --arg model "$claude_model" \
          '{
-            model: "claude-opus-4-20250514",
+            model: $model,
             max_tokens: 4096,
             messages: [
               {
@@ -208,73 +289,23 @@ output_result() {
    esac
 }
 
-# Parse common command-line arguments
-parse_common_arguments() {
-   while [ $# -gt 0 ]; do
-      case $1 in
-      # AI Model options
-      -l* | --ollama*)
-         active_function=ollama_summarize
-         if [[ $1 =~ =(.*)$ ]]; then
-            ollama_model="${BASH_REMATCH[1]}"
-         fi
-         ;;
-      -o* | --openai*)
-         active_function=openai_summarize
-         if [[ $1 =~ =(.*)$ ]]; then
-            openai_model="${BASH_REMATCH[1]}"
-         fi
-         ;;
-      --claude)
-         active_function=claude_summarize
-         ;;
-      --preprompt*)
-         if [[ $1 =~ =(.*)$ ]]; then
-            pre_prompt="${BASH_REMATCH[1]}"
-         else
-            shift
-            pre_prompt="$1"
-         fi
-         ;;
-      # Input options
-      -c | --clipboard)
-         source=CLIPBOARD
-         ;;
-      -s | --selection)
-         source=SELECTION
-         ;;
-      # Output options
-      -n | --notification)
-         output_mode=NOTIFICATION
-         ;;
-      -d | --dialog)
-         output_mode=DIALOG
-         ;;
-      -t | --type)
-         output_mode=TYPE
-         ;;
-      -p | --paste)
-         output_mode=PASTE
-         ;;
-      # URL input
-      http://* | https://*)
-         source=URL
-         source_identifier="$1"
-
-         command -v curl >/dev/null 2>&1 && command -v html2text >/dev/null 2>&1 || {
-            echo "‼️ curl and html2text are required to fetch and convert HTML content." >&2
-            exit 1
-         }
-
-         ;;
-      # File input (default case)
-      *)
-         source=FILE
-         source_identifier="$1"
-         ;;
-      esac
-      shift
-   done
+# Fetch content from URL
+fetch_url_content() {
+   local url="$1"
+   if command -v curl >/dev/null 2>&1; then
+      curl -s -L "$url" || {
+         echo "❌ Failed to fetch URL: $url" >&2
+         exit 1
+      }
+   elif command -v wget >/dev/null 2>&1; then
+      wget -q -O - "$url" || {
+         echo "❌ Failed to fetch URL: $url" >&2
+         exit 1
+      }
+   else
+      echo "‼️ Neither curl nor wget found" >&2
+      exit 1
+   fi
 }
 
 # Prepare file content - handle various file types with validation
@@ -329,14 +360,96 @@ prepare_file_content() {
    exit 1
 }
 
-# Execute the main processing based on source type
+# Parse common command-line arguments
+parse_common_arguments() {
+   while [ $# -gt 0 ]; do
+      case $1 in
+      # AI Model options
+      -l* | --ollama*)
+         active_function=ollama
+         if [[ $1 =~ =(.*)$ ]]; then
+            ollama_model="${BASH_REMATCH[1]}"
+         elif [[ "${1:2:1}" != "" && "${1:0:2}" == "-l" ]]; then
+            # Handle -lmodel format
+            ollama_model="${1:2}"
+         fi
+         ;;
+      -o* | --openai*)
+         active_function=openai
+         if [[ $1 =~ =(.*)$ ]]; then
+            openai_model="${BASH_REMATCH[1]}"
+         elif [[ "${1:2:1}" != "" && "${1:0:2}" == "-o" ]]; then
+            # Handle -omodel format
+            openai_model="${1:2}"
+         fi
+         ;;
+      --claude*)
+         active_function=claude
+         if [[ $1 =~ =(.*)$ ]]; then
+            claude_model="${BASH_REMATCH[1]}"
+         fi
+         ;;
+      --preprompt* | --prompt*)
+         if [[ $1 =~ =(.*)$ ]]; then
+            pre_prompt="${BASH_REMATCH[1]}"
+         else
+            shift
+            pre_prompt="$1"
+         fi
+         ;;
+      # Input modes
+      -c | --clipboard)
+         source=CLIPBOARD
+         ;;
+      -s | --selection)
+         source=SELECTION
+         ;;
+      # Output modes
+      -n | --notification)
+         output_mode=NOTIFICATION
+         ;;
+      -d | --dialog)
+         output_mode=DIALOG
+         ;;
+      -t | --type)
+         output_mode=TYPE
+         ;;
+      -p | --paste)
+         output_mode=PASTE
+         ;;
+      # Explicit stdin
+      -)
+         source=STDIN
+         ;;
+      # URL input
+      http://* | https://*)
+         source=URL
+         source_identifier="$1"
+         ;;
+      # File input (default case)
+      *)
+         if [[ -f "$1" ]]; then
+            source=FILE
+            source_identifier="$1"
+         else
+            echo "‼️ Unknown argument or file not found: $1" >&2
+            display_help_text_and_die
+         fi
+         ;;
+      esac
+      shift
+   done
+}
+
+# Execute processing based on source
 execute_processing() {
    case "$source" in
    STDIN)
       construct_prompt
       ;;
    URL)
-      construct_prompt < <(curl -s "$source_identifier" | html2text)
+      hline "Fetching URL: $source_identifier"
+      fetch_url_content "$source_identifier" | construct_prompt
       ;;
    FILE)
       construct_prompt < <(prepare_file_content "$source_identifier")
@@ -348,7 +461,7 @@ execute_processing() {
       construct_prompt < <(get_selection_content)
       ;;
    *)
-      echo "Unknown source type: $source" >&2
+      echo "‼️ Unknown source: $source" >&2
       exit 1
       ;;
    esac

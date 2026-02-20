@@ -9,8 +9,11 @@ A bash script that either summarizes or proofreads text using Ollama (local), Op
 The script operates in one of two modes: summarization when run as =summarize-text= or polishing when run as =polish-text=.
 
 * Quick Start
-** Installation
-Clone the repo and add the directory to your PATH.
+
+#+BEGIN_SRC bash
+brew tap tigger04/tap
+brew install summarize-text
+#+END_SRC
 
 ** Dependencies
 *** Required
@@ -64,7 +67,7 @@ cat document.txt | ./summarize-text           # stdin
 ./summarize-text --clipboard                  # clipboard
 ./polish-text --selection                     # selection (polish mode)
 
-# Output methods  
+# Output methods
 ./summarize-text document.txt                 # stdout (default)
 ./summarize-text document.txt --paste         # copy to clipboard
 ./polish-text document.txt --notification     # system notification
@@ -112,7 +115,7 @@ When run as =polish-text= or =polish=:
 - =URL= : Read from web page (http/https)
 - =STDIN= : Read from pipe (default)
 
-** Output Destinations  
+** Output Destinations
 - =-n|--notification= : Show as system notification
 - =-d|--dialog= : Show in system dialog box
 - =-t|--type= : Type result automatically (requires mactype)
@@ -132,7 +135,7 @@ cat file.txt | ./summarize-text
 ./summarize-text --clipboard --openai
 ./summarize-text --selection --ollama=llama2
 
-# Output options  
+# Output options
 ./summarize-text file.txt --notification
 ./summarize-text --clipboard --paste
 
@@ -184,6 +187,25 @@ export CLAUDE_API_KEY_NAME="my-claude-key"
 export CLAUDE_API_KEY="sk-ant-12340000000000000000000000000000000000000000000000000000000000000"
 #+END_SRC
 
+* Development Installation
+
+For development or manual installation:
+
+#+BEGIN_SRC bash
+# Clone the repository
+git clone https://github.com/tigger04/summarize-text.git
+cd summarize-text
+
+# Run tests
+make test
+
+# Install to /usr/local/bin (requires sudo)
+sudo make install
+
+# Uninstall
+sudo make uninstall
+#+END_SRC
+
 * License
 
 MIT
@@ -217,4 +239,3 @@ MIT
 - Initial release
 - Amended for Bash 3.2+ compatibility
 - Support for Ollama, OpenAI, and Claude APIs
-- STDIN text processing
