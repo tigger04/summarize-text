@@ -48,14 +48,15 @@ load_config() {
       elif [[ "$ollama_available" == true ]]; then
          active_function="ollama"
       else
-         echo "⚠️ No AI service available. Please set OPENAI_API_KEY, CLAUDE_API_KEY, or ensure Ollama is running." >&2
-         echo "You can also create a config file at ~/.config/summarize-text/config" >&2
-         exit 1
+         # Defer error to execution time so --help still works
+         active_function=""
       fi
    fi
 
    # Override default from config or env
-   [[ -n "${DEFAULT_AI:-}" ]] && active_function="${DEFAULT_AI}"
+   if [[ -n "${DEFAULT_AI:-}" ]]; then
+      active_function="${DEFAULT_AI}"
+   fi
 }
 
 # Initialize configuration
@@ -441,8 +442,18 @@ parse_common_arguments() {
    done
 }
 
+# Validate that an AI service is available before processing
+validate_ai_available() {
+   if [[ -z "$active_function" ]]; then
+      echo "⚠️ No AI service available. Please set OPENAI_API_KEY, CLAUDE_API_KEY, or ensure Ollama is running." >&2
+      echo "You can also create a config file at ~/.config/summarize-text/config" >&2
+      exit 1
+   fi
+}
+
 # Execute processing based on source
 execute_processing() {
+   validate_ai_available
    case "$source" in
    STDIN)
       construct_prompt
