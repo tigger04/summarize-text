@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# ABOUTME: AI-powered text polishing CLI tool
+# ABOUTME: Improves and refines text from files, URLs, clipboard, or stdin using OpenAI, Claude, or Ollama
 
 set -euo pipefail
 IFS=$'\n\t'
@@ -95,9 +97,13 @@ EOM
    exit 1
 }
 
-# Handle help flag
+# Handle help and version flags
 if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
    display_help_text_and_die
+fi
+if [[ "${1:-}" == "--version" ]]; then
+   echo "$cmd_base $(cat "$script_dir/VERSION" 2>/dev/null || echo "unknown")"
+   exit 0
 fi
 
 # Parse command-line arguments

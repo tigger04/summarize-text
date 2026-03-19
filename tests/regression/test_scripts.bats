@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
-
-# Test suite for summarize-text tools
+# ABOUTME: Bats test suite for summarize-text tools
+# ABOUTME: Tests executability, help output, library functions, and file handling
 
 setup() {
    # Get the project root directory

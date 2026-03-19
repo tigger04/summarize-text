@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# ABOUTME: AI-powered smart filename generator
+# ABOUTME: Analyzes file content and generates descriptive filenames using OpenAI, Claude, or Ollama
 
 set -euo pipefail
 IFS=$'\n\t'
@@ -160,9 +162,13 @@ smart_filename_output() {
    fi
 }
 
-# Handle help flag
+# Handle help and version flags
 if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
    display_help_text_and_die
+fi
+if [[ "${1:-}" == "--version" ]]; then
+   echo "$cmd_base $(cat "$script_dir/VERSION" 2>/dev/null || echo "unknown")"
+   exit 0
 fi
 
 # Parse command-line arguments
