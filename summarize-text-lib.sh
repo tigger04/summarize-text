@@ -2,8 +2,11 @@
 # ABOUTME: Library for text summarization tools with AI model support
 # ABOUTME: Provides OpenAI, Claude, and Ollama integration with flexible configuration
 
+set -euo pipefail
+IFS=$'\n\t'
+
 # Check for bash v3.2+
-if [ "${BASH_VERSINFO[0]}" -lt 3 ] || ([ "${BASH_VERSINFO[0]}" -eq 3 ] && [ "${BASH_VERSINFO[1]}" -lt 2 ]); then
+if [ "${BASH_VERSINFO[0]}" -lt 3 ] || { [ "${BASH_VERSINFO[0]}" -eq 3 ] && [ "${BASH_VERSINFO[1]}" -lt 2 ]; }; then
    echo "This script requires bash 3.2 or higher." >&2
    echo "Current version: ${BASH_VERSION}" >&2
    exit 1
@@ -24,6 +27,7 @@ load_config() {
 
    # Load from config file if exists
    if [[ -f "$config_file" ]]; then
+      # shellcheck source=/dev/null  # SC1090: user config file, path varies
       source "$config_file"
    fi
 
@@ -440,6 +444,26 @@ parse_common_arguments() {
       esac
       shift
    done
+}
+
+# Dispatch to the active AI function via case statement
+# Avoids executing $active_function as a command (prohibited pattern)
+run_ai_function() {
+   case "$active_function" in
+   openai)
+      openai
+      ;;
+   claude)
+      claude
+      ;;
+   ollama)
+      ollama
+      ;;
+   *)
+      echo "‼️ Unknown AI function: $active_function" >&2
+      exit 1
+      ;;
+   esac
 }
 
 # Validate that an AI service is available before processing

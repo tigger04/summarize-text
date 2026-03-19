@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-set -e -o pipefail
-shopt -s dotglob
+set -euo pipefail
+IFS=$'\n\t'
 
 # Source the shared library - resolve symlinks to find actual script location
 script="${BASH_SOURCE[0]}"
@@ -151,17 +151,17 @@ smart_filename_output() {
       fi
 
       # Perform the rename
-      mv "$rename_original" "$new_filename" && {
+      if mv "$rename_original" "$new_filename"; then
          echo "✓ Renamed to: $new_filename" >&2
-      } || {
+      else
          echo "❌ Failed to rename file" >&2
          return 1
-      }
+      fi
    fi
 }
 
 # Handle help flag
-if [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
+if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
    display_help_text_and_die
 fi
 
@@ -192,7 +192,7 @@ if [[ "$source" == "FILE" ]]; then
       # Execute processing and run the active function
       execute_processing
       hline "$cmd_base using $active_function"
-      $active_function
+      run_ai_function
       
       echo "" >&2  # Add blank line between files
    done

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-set -e -o pipefail
-shopt -s dotglob
+set -euo pipefail
+IFS=$'\n\t'
 
 # Source the shared library - resolve symlinks to find actual script location
 script="${BASH_SOURCE[0]}"
@@ -96,7 +96,7 @@ EOM
 }
 
 # Handle help flag
-if [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
+if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
    display_help_text_and_die
 fi
 
@@ -106,4 +106,4 @@ parse_common_arguments "$@"
 # Execute processing and run the active function
 execute_processing
 hline "$cmd_base using $active_function"
-$active_function
+run_ai_function

@@ -2,6 +2,9 @@
 # ABOUTME: Configuration system tests for summarize-text
 # ABOUTME: Tests environment variable loading, config file parsing, and fallbacks
 
+set -euo pipefail
+IFS=$'\n\t'
+
 TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$TEST_DIR/../.." && pwd)"
 TMP_DIR="$TEST_DIR/tmp"
@@ -17,7 +20,7 @@ TESTS_PASSED=0
 
 pass() {
     echo -e "${GREEN}✓ $1${NC}"
-    ((TESTS_PASSED++))
+    TESTS_PASSED=$((TESTS_PASSED + 1))
 }
 
 fail() {
@@ -26,7 +29,7 @@ fail() {
 }
 
 run_test() {
-    ((TESTS_RUN++))
+    TESTS_RUN=$((TESTS_RUN + 1))
     echo "→ Testing: $1"
 }
 
@@ -69,7 +72,9 @@ fi
 
 # Test 4: Config file sourcing
 run_test "Config file sourcing"
+# shellcheck source=/dev/null  # SC1091: test-generated config file
 source "$HOME/.config/summarize-text/config"
+# shellcheck disable=SC2154  # SC2154: variables set by sourced config file
 if [[ "$openai_model" == "gpt-4" && "$ollama_model" == "llama2" ]]; then
     pass "Config file variables loaded correctly"
 else

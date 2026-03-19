@@ -2,6 +2,9 @@
 # ABOUTME: Integration tests for summarize-text
 # ABOUTME: Tests basic functionality and file operations
 
+set -euo pipefail
+IFS=$'\n\t'
+
 TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$TEST_DIR/../.." && pwd)"
 TMP_DIR="$TEST_DIR/tmp"
@@ -17,7 +20,7 @@ TESTS_PASSED=0
 
 pass() {
     echo -e "${GREEN}✓ $1${NC}"
-    ((TESTS_PASSED++))
+    TESTS_PASSED=$((TESTS_PASSED + 1))
 }
 
 fail() {
@@ -26,7 +29,7 @@ fail() {
 }
 
 run_test() {
-    ((TESTS_RUN++))
+    TESTS_RUN=$((TESTS_RUN + 1))
     echo "→ Testing: $1"
 }
 
