@@ -4,7 +4,7 @@
 
 setup() {
    # Get the project root directory
-   PROJECT_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/.." && pwd)"
+   PROJECT_ROOT="$(cd "$(dirname "$BATS_TEST_FILENAME")/../.." && pwd)"
    export PATH="$PROJECT_ROOT:$PATH"
 }
 
@@ -153,13 +153,13 @@ setup() {
 }
 
 @test "prepare_file_content handles text files" {
-   run bash -c "source '$PROJECT_ROOT/summarize-text-lib.sh' && prepare_file_content '$PROJECT_ROOT/test/fixtures/sample.txt'"
+   run bash -c "source '$PROJECT_ROOT/summarize-text-lib.sh' && prepare_file_content '$PROJECT_ROOT/tests/regression/fixtures/sample.txt'"
    [ "$status" -eq 0 ]
    [[ "$output" =~ "sample text file" ]]
 }
 
 @test "prepare_file_content handles markdown files" {
-   run bash -c "source '$PROJECT_ROOT/summarize-text-lib.sh' && prepare_file_content '$PROJECT_ROOT/test/fixtures/sample.md'"
+   run bash -c "source '$PROJECT_ROOT/summarize-text-lib.sh' && prepare_file_content '$PROJECT_ROOT/tests/regression/fixtures/sample.md'"
    [ "$status" -eq 0 ]
    [[ "$output" =~ "markdown" ]]
 }
@@ -170,7 +170,7 @@ setup() {
       skip "pdftotext not installed"
    fi
 
-   run bash -c "source '$PROJECT_ROOT/summarize-text-lib.sh' && prepare_file_content '$PROJECT_ROOT/test/fixtures/sample.pdf'"
+   run bash -c "source '$PROJECT_ROOT/summarize-text-lib.sh' && prepare_file_content '$PROJECT_ROOT/tests/regression/fixtures/sample.pdf'"
    [ "$status" -eq 0 ]
    [[ "$output" =~ "sample PDF" ]]
 }
@@ -181,7 +181,7 @@ setup() {
       skip "pandoc not installed"
    fi
 
-   run bash -c "source '$PROJECT_ROOT/summarize-text-lib.sh' && prepare_file_content '$PROJECT_ROOT/test/fixtures/sample.docx'"
+   run bash -c "source '$PROJECT_ROOT/summarize-text-lib.sh' && prepare_file_content '$PROJECT_ROOT/tests/regression/fixtures/sample.docx'"
    [ "$status" -eq 0 ]
    [[ "$output" =~ "Sample Document" ]]
 }
@@ -189,7 +189,7 @@ setup() {
 @test "prepare_file_content rejects unsupported binary files" {
    # Note: pandoc might successfully process some binary files
    # This test verifies either rejection or successful processing
-   run bash -c "source '$PROJECT_ROOT/summarize-text-lib.sh' && prepare_file_content '$PROJECT_ROOT/test/fixtures/sample.png' 2>&1"
+   run bash -c "source '$PROJECT_ROOT/summarize-text-lib.sh' && prepare_file_content '$PROJECT_ROOT/tests/regression/fixtures/sample.png' 2>&1"
    # Accept either: pandoc processes it (exit 0) or it's rejected (exit non-0)
    # If rejected, should show unsupported message
    if [ "$status" -ne 0 ]; then

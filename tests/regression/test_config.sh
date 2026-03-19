@@ -3,7 +3,7 @@
 # ABOUTME: Tests environment variable loading, config file parsing, and fallbacks
 
 TEST_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$TEST_DIR")"
+PROJECT_DIR="$(cd "$TEST_DIR/../.." && pwd)"
 TMP_DIR="$TEST_DIR/tmp"
 
 # Colors for output

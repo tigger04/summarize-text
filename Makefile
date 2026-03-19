@@ -17,14 +17,14 @@ help:
 	@echo "  brew tap tigger04/tap"
 	@echo "  brew install summarize-text"
 
-# Run tests
+# Run regression tests
 test:
 	@echo "Running tests with bats-core..."
-	@bats test/test_scripts.bats
+	@bats tests/regression/test_scripts.bats
 	@echo "Running configuration tests..."
-	@./test/test_config.sh
+	@./tests/regression/test_config.sh
 	@echo "Running integration tests..."
-	@./test/test_integration.sh
+	@./tests/regression/test_integration.sh
 	@echo "All tests passed!"
 
 # Development install (requires sudo)
@@ -55,11 +55,7 @@ summarize-text:
 
 # Clean test artifacts and temporary files
 clean:
-	rm -rf test/tmp/
-	rm -f test/*.log
+	rm -rf tests/regression/tmp/
+	rm -f tests/regression/*.log
 	@find . -name "*.bak" -delete
 	@find . -name "*~" -delete
-
-# Create test directories if they don't exist
-test/tmp:
-	mkdir -p test/tmp
