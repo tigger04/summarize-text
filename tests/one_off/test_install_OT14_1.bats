@@ -25,7 +25,7 @@ teardown() {
    done
 }
 
-@test "OT-14.2 installed commands expose their versions through development symlinks" {
+@test "OT-14.2 installed commands expose help and versions through development symlinks" {
    run env PATH="$FAKE_BIN:$PATH" make -C "$PROJECT_ROOT" install PREFIX="$PREFIX_DIR"
    [ "$status" -eq 0 ]
 
@@ -33,6 +33,10 @@ teardown() {
       run "$PREFIX_DIR/bin/$command_name" --version
       [ "$status" -eq 0 ]
       [ "$output" = "$command_name $(cat "$PROJECT_ROOT/VERSION")" ]
+
+      run "$PREFIX_DIR/bin/$command_name" --help
+      [ "$status" -eq 0 ]
+      [[ "$output" =~ "Usage" ]]
    done
 }
 
