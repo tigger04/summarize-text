@@ -1,0 +1,5 @@
+# Agent runtime state
+.agent/
+.agents/
+.claude/
+.codex/

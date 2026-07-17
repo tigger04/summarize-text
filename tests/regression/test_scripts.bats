@@ -31,25 +31,25 @@ setup() {
 }
 
 # Test summarize-text help
-@test "summarize-text --help works" {
+@test "RT-14.1 summarize-text --help exits successfully" {
    run "$PROJECT_ROOT/summarize-text" --help
-   [ "$status" -eq 1 ]  # Help exits with 1
+   [ "$status" -eq 0 ]
    [[ "$output" =~ "USAGE" ]]
    [[ "$output" =~ "Summarize" ]]
 }
 
 # Test polish-text help
-@test "polish-text --help works" {
+@test "RT-14.2 polish-text --help exits successfully" {
    run "$PROJECT_ROOT/polish-text" --help
-   [ "$status" -eq 1 ]  # Help exits with 1
+   [ "$status" -eq 0 ]
    [[ "$output" =~ "USAGE" ]]
    [[ "$output" =~ "Polish" ]]
 }
 
 # Test smart-filename help
-@test "smart-filename --help works" {
+@test "RT-14.3 smart-filename --help exits successfully" {
    run "$PROJECT_ROOT/smart-filename" --help
-   [ "$status" -eq 1 ]  # Help exits with 1
+   [ "$status" -eq 0 ]
    [[ "$output" =~ "USAGE" ]]
    [[ "$output" =~ "smart filename" ]]
 }
@@ -97,48 +97,78 @@ setup() {
 }
 
 # Test smart-filename has -y flag support
-@test "smart-filename help mentions -y flag" {
+@test "RT-14.6 smart-filename -h exits successfully" {
+   run "$PROJECT_ROOT/smart-filename" -h
+   [ "$status" -eq 0 ]
    run "$PROJECT_ROOT/smart-filename" --help
    [[ "$output" =~ "-y" ]] || [[ "$output" =~ "--yes" ]]
 }
 
+@test "RT-14.4 summarize-text -h exits successfully" {
+   run "$PROJECT_ROOT/summarize-text" -h
+   [ "$status" -eq 0 ]
+}
+
+@test "RT-14.5 polish-text -h exits successfully" {
+   run "$PROJECT_ROOT/polish-text" -h
+   [ "$status" -eq 0 ]
+}
+
+@test "RT-14.7 summarize-text --version reports the repository version" {
+   run "$PROJECT_ROOT/summarize-text" --version
+   [ "$status" -eq 0 ]
+   [ "$output" = "summarize-text $(cat "$PROJECT_ROOT/VERSION")" ]
+}
+
+@test "RT-14.8 polish-text --version reports the repository version" {
+   run "$PROJECT_ROOT/polish-text" --version
+   [ "$status" -eq 0 ]
+   [ "$output" = "polish-text $(cat "$PROJECT_ROOT/VERSION")" ]
+}
+
+@test "RT-14.9 smart-filename --version reports the repository version" {
+   run "$PROJECT_ROOT/smart-filename" --version
+   [ "$status" -eq 0 ]
+   [ "$output" = "smart-filename $(cat "$PROJECT_ROOT/VERSION")" ]
+}
+
 # Test symlink support
-@test "summarize-text works via symlink" {
+@test "RT-14.10 summarize-text works via symlink" {
    # Create temporary directory and symlink
    TEMP_DIR=$(mktemp -d)
    ln -s "$PROJECT_ROOT/summarize-text" "$TEMP_DIR/summarize-test-link"
 
    # Test that help works via symlink
    run "$TEMP_DIR/summarize-test-link" --help
-   [ "$status" -eq 1 ]  # Help exits with 1
+   [ "$status" -eq 0 ]
    [[ "$output" =~ "USAGE" ]]
 
    # Cleanup
    rm -rf "$TEMP_DIR"
 }
 
-@test "polish-text works via symlink" {
+@test "RT-14.11 polish-text works via symlink" {
    # Create temporary directory and symlink
    TEMP_DIR=$(mktemp -d)
    ln -s "$PROJECT_ROOT/polish-text" "$TEMP_DIR/polish-test-link"
 
    # Test that help works via symlink
    run "$TEMP_DIR/polish-test-link" --help
-   [ "$status" -eq 1 ]  # Help exits with 1
+   [ "$status" -eq 0 ]
    [[ "$output" =~ "USAGE" ]]
 
    # Cleanup
    rm -rf "$TEMP_DIR"
 }
 
-@test "smart-filename works via symlink" {
+@test "RT-14.12 smart-filename works via symlink" {
    # Create temporary directory and symlink
    TEMP_DIR=$(mktemp -d)
    ln -s "$PROJECT_ROOT/smart-filename" "$TEMP_DIR/smart-test-link"
 
    # Test that help works via symlink
    run "$TEMP_DIR/smart-test-link" --help
-   [ "$status" -eq 1 ]  # Help exits with 1
+   [ "$status" -eq 0 ]
    [[ "$output" =~ "USAGE" ]]
 
    # Cleanup
