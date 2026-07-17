@@ -1,4 +1,4 @@
-<!-- Version: 1.0 | Last updated: 2026-03-19 -->
+<!-- Version: 1.1 | Last updated: 2026-07-17 -->
 
 # Testing
 
@@ -12,6 +12,7 @@ Tests use [bats-core](https://github.com/bats-core/bats-core) for the main test 
 tests/
   regression/          ← run by `make test`
     test_scripts.bats  ← main bats test suite
+    test_key_commands.bats ← command-backed API-key tests
     test_config.sh     ← configuration system tests
     test_integration.sh ← integration/file operation tests
     fixtures/          ← sample files for testing
@@ -45,6 +46,10 @@ The main test suite covering:
 - File type handling (`prepare_file_content`)
 - Pre-prompt correctness per script
 
+### Command-Key Tests (`test_key_commands.bats`)
+
+The command-key suite runs the public CLI against a temporary fake API client. It verifies command-based OpenAI and Claude key retrieval, environment-variable precedence, and failure handling without sending a request to an external provider.
+
 ### Configuration Tests (`test_config.sh`)
 
 Tests for the configuration system:
@@ -70,7 +75,7 @@ All new tests must carry a unique ID (see `tests/NEXT_IDS.txt`):
 | `RT-NNN` | Regression | `tests/regression/` |
 | `OT-NNN` | One-off | `tests/one_off/` |
 
-Legacy tests without IDs are not retrofitted — they receive IDs when next modified.
+Legacy tests without IDs are not retrofitted --- they receive IDs when next modified.
 
 ## Adding Tests
 

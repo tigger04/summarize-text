@@ -34,6 +34,7 @@ help:
 test:
 	@echo "Running tests with bats-core..."
 	@bats tests/regression/test_scripts.bats
+	@bats tests/regression/test_key_commands.bats
 	@echo "Running configuration tests..."
 	@./tests/regression/test_config.sh
 	@echo "Running integration tests..."

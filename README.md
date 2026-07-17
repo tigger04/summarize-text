@@ -1,4 +1,4 @@
-<!-- Version: 1.1 | Last updated: 2026-07-17 -->
+<!-- Version: 1.2 | Last updated: 2026-07-17 -->
 
 # summarize-text
 
@@ -30,6 +30,15 @@ mkdir -p ~/.config/summarize-text
 cp config.example ~/.config/summarize-text/config
 # Edit with your API keys
 ```
+
+To avoid storing a key in the configuration file, configure a command that prints it to standard output:
+
+```bash
+openai_api_key_command="op read 'op://Private/OpenAI/credential'"
+claude_api_key_command="op read 'op://Private/Claude/credential'"
+```
+
+Environment variables take precedence over these command values. Ollama does not use an API key; configure `OLLAMA_API_URL` only when using a remote server.
 
 ## Usage
 
@@ -115,6 +124,10 @@ make help          # Show all targets
 MIT License --- Copyright (c) Taḋg Paul. See [LICENSE](LICENSE).
 
 ## Changelog
+
+### 1.2
+
+- Documented command-backed OpenAI and Claude API-key configuration.
 
 ### 1.1
 
