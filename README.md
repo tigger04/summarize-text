@@ -113,3 +113,9 @@ make help          # Show all targets
 ## License
 
 MIT License --- Copyright (c) Taḋg Paul. See [LICENSE](LICENSE).
+
+## Changelog
+
+### 1.1
+
+- Documented the user-local development symlink installation path.
