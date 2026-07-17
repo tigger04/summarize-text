@@ -8,9 +8,9 @@ IFS=$'\n\t'
 # Source the shared library - resolve symlinks to find actual script location
 script="${BASH_SOURCE[0]}"
 while [[ -L "$script" ]]; do
-    script_dir="$(cd -P "$(dirname "$script")" && pwd)"
-    script="$(readlink "$script")"
-    [[ $script != /* ]] && script="$script_dir/$script"
+	script_dir="$(cd -P "$(dirname "$script")" && pwd)"
+	script="$(readlink "$script")"
+	[[ $script != /* ]] && script="$script_dir/$script"
 done
 script_dir="$(cd -P "$(dirname "$script")" && pwd)"
 # shellcheck source=./summarize-text-lib.sh
@@ -21,89 +21,17 @@ cmd_base=$(basename "$0")
 pre_prompt="Please sharpen and improve the language and message of the following text, preserving key points and meaning. Keep things respectful, accurate, brief and clear. Never use emojis. If there is one key important message be sure to emphasize it. If and only if the message is lengthy, introduce it by setting context and end it with a concise summary with clear takeaways."
 
 display_help_text_and_die() {
-   cat - <<EOM
-USAGE
------
-   $cmd_base [OPTIONS] INPUT [OUTPUT]
-
-WTF
----
-   Polish and improve a piece of text using AI.
-
-WHERE
------
-   INPUT (mandatory) can be:
-     - a filename
-     - a URL (starting with http:// or https://)
-     - '-' i.e. from standard input (stdin)
-     - the clipboard (see opts)
-     - selected text (see opts)
-   OUTPUTS
-     - to STDOUT (default)
-     - to a file using redirection (>)
-     - pasted (see opts) by triggering CMD+V / CTRL+V (depending on OS)
-     - typed (see opts)
-     - a notification (see opts)
-     - a dialog (see opts)
-OPTIONS
--------
-   AI MODELS
-
-   -l | --ollama[=model_name]: Use the Ollama API (with given model if specified)
-                               (requires ollama launchd service to be running)
-   -o | --openai[=model_name]: Use the OpenAI API (with given model if specified)
-   --claude:  Use the Claude API
-   --preprompt[=]PRE_PROMPT: Use custom PRE_PROMPT
-
-   INPUT
-      -c / --clipboard
-      -s / --selection (0.3s delay for copy operation)
-
-   OUTPUT
-      -n / --notification # using notify command (or macOS osascript fallback)
-      -d / --dialog # using dialog command (or macOS osascript fallback)
-      -t / --type # using mactype command
-      -p / --paste # copies to clipboard (macOS/Linux compatible)
-
-EXAMPLES
---------
-   # Input methods
-   cat document.txt | $cmd_base              # stdin
-   $cmd_base document.txt                    # file
-   $cmd_base --clipboard                     # clipboard
-   $cmd_base --selection                     # selection
-
-   # Output methods
-   $cmd_base document.txt                    # stdout (default)
-   $cmd_base document.txt --paste            # copy to clipboard
-   $cmd_base document.txt --notification     # system notification
-   $cmd_base --clipboard --dialog            # system dialog
-
-   # URL and AI options
-   $cmd_base https://example.com --claude
-   $cmd_base document.txt --ollama=llama2
-
-DEFAULTS
---------
-   Active function: $active_function
-   Ollama model: $ollama_model
-   OpenAI model: $openai_model
-   Source: $source
-   Output mode: $output_mode
-   Pre-prompt:
-      "$pre_prompt"
-
-EOM
-   exit 1
+	cat "$script_dir/docs/polish-text-help.md"
+	exit 0
 }
 
 # Handle help and version flags
 if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
-   display_help_text_and_die
+	display_help_text_and_die
 fi
 if [[ "${1:-}" == "--version" ]]; then
-   echo "$cmd_base $(cat "$script_dir/VERSION" 2>/dev/null || echo "unknown")"
-   exit 0
+	echo "$cmd_base $(cat "$script_dir/VERSION" 2>/dev/null || echo "unknown")"
+	exit 0
 fi
 
 # Parse command-line arguments

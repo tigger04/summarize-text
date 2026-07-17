@@ -8,9 +8,9 @@ IFS=$'\n\t'
 # Source the shared library - resolve symlinks to find actual script location
 script="${BASH_SOURCE[0]}"
 while [[ -L "$script" ]]; do
-    script_dir="$(cd -P "$(dirname "$script")" && pwd)"
-    script="$(readlink "$script")"
-    [[ $script != /* ]] && script="$script_dir/$script"
+	script_dir="$(cd -P "$(dirname "$script")" && pwd)"
+	script="$(readlink "$script")"
+	[[ $script != /* ]] && script="$script_dir/$script"
 done
 script_dir="$(cd -P "$(dirname "$script")" && pwd)"
 # shellcheck source=./summarize-text-lib.sh
@@ -31,144 +31,111 @@ rename_original=""
 files_to_process=()
 
 display_help_text_and_die() {
-   cat - <<EOM
-USAGE
------
-   $cmd_base [-y] [OPTIONS] FILENAME...
-   $cmd_base [OPTIONS] --clipboard
-
-WTF
----
-   Analyze file(s) and generate smart filenames. Offers to rename the files
-   with a simple y/n prompt, or use -y to automatically rename them.
-
-OPTIONS
--------
-   AI Models:
-      -l|--ollama[=model]   Use Ollama API (default: $ollama_model)
-      -o|--openai[=model]   Use OpenAI API (default: $openai_model)
-      --claude              Use Claude API
-      --prompt=TEXT         Custom prompt
-
-   Input:
-      -c|--clipboard        Read from clipboard instead of file
-
-   Rename:
-      -y|--yes              Auto-rename without confirmation
-
-EXAMPLES
---------
-   $cmd_base receipt.pdf                      # Analyze and prompt to rename
-   $cmd_base -y invoice.pdf                   # Analyze and auto-rename
-   $cmd_base -y file1.pdf file2.txt file3.md  # Process multiple files
-   $cmd_base --clipboard                      # Generate from clipboard
-   $cmd_base document.txt --claude            # Use Claude model
-
-EOM
-   exit 1
+	cat "$script_dir/docs/smart-filename-help.md"
+	exit 0
 }
 
 # Custom argument parser for smart-filename specific options
 parse_smart_filename_arguments() {
-   while [ $# -gt 0 ]; do
-      case $1 in
-      -y | --yes)
-         skip_confirmation=true
-         ;;
-      -h | --help)
-         display_help_text_and_die
-         ;;
-      # AI Model options
-      -l* | --ollama*)
-         active_function=ollama
-         if [[ $1 =~ =(.*)$ ]]; then
-            ollama_model="${BASH_REMATCH[1]}"
-         fi
-         ;;
-      -o* | --openai*)
-         active_function=openai
-         if [[ $1 =~ =(.*)$ ]]; then
-            openai_model="${BASH_REMATCH[1]}"
-         fi
-         ;;
-      --claude)
-         active_function=claude
-         ;;
-      --prompt*)
-         if [[ $1 =~ =(.*)$ ]]; then
-            pre_prompt="${BASH_REMATCH[1]}"
-         else
-            shift
-            pre_prompt="$1"
-         fi
-         ;;
-      # Input options
-      -c | --clipboard)
-         source=CLIPBOARD
-         ;;
-      # File input (default case) - store for potential rename
-      *)
-         source=FILE
-         files_to_process+=("$1")
-         ;;
-      esac
-      shift
-   done
+	while [ $# -gt 0 ]; do
+		case $1 in
+		-y | --yes)
+			skip_confirmation=true
+			;;
+		-h | --help)
+			display_help_text_and_die
+			;;
+		# AI Model options
+		-l* | --ollama*)
+			active_function=ollama
+			if [[ $1 =~ =(.*)$ ]]; then
+				ollama_model="${BASH_REMATCH[1]}"
+			fi
+			;;
+		-o* | --openai*)
+			active_function=openai
+			if [[ $1 =~ =(.*)$ ]]; then
+				openai_model="${BASH_REMATCH[1]}"
+			fi
+			;;
+		--claude)
+			active_function=claude
+			;;
+		--prompt*)
+			if [[ $1 =~ =(.*)$ ]]; then
+				pre_prompt="${BASH_REMATCH[1]}"
+			else
+				shift
+				pre_prompt="$1"
+			fi
+			;;
+		# Input options
+		-c | --clipboard)
+			source=CLIPBOARD
+			;;
+		# File input (default case) - store for potential rename
+		*)
+			source=FILE
+			files_to_process+=("$1")
+			;;
+		esac
+		shift
+	done
 }
 
 # Custom output handler that can perform file rename
 smart_filename_output() {
-   local generated_name="$1"
+	local generated_name="$1"
 
-   # Output the generated filename
-   echo "$generated_name"
+	# Output the generated filename
+	echo "$generated_name"
 
-   # If source was a file, offer to rename
-   if [[ -n "$rename_original" && -f "$rename_original" ]]; then
-      # Get file extension
-      local extension="${rename_original##*.}"
-      local new_filename
+	# If source was a file, offer to rename
+	if [[ -n "$rename_original" && -f "$rename_original" ]]; then
+		# Get file extension
+		local extension="${rename_original##*.}"
+		local new_filename
 
-      # If there's an extension and it's not the whole filename, add it
-      if [[ "$extension" != "$rename_original" && -n "$extension" ]]; then
-         new_filename="${generated_name}.${extension,,}"
-      else
-         new_filename="$generated_name"
-      fi
+		# If there's an extension and it's not the whole filename, add it
+		if [[ "$extension" != "$rename_original" && -n "$extension" ]]; then
+			new_filename="${generated_name}.${extension,,}"
+		else
+			new_filename="$generated_name"
+		fi
 
-      # Check if target already exists
-      if [[ -e "$new_filename" ]]; then
-         echo "⚠️ Target file '$new_filename' already exists. Skipping rename." >&2
-         return 0
-      fi
+		# Check if target already exists
+		if [[ -e "$new_filename" ]]; then
+			echo "⚠️ Target file '$new_filename' already exists. Skipping rename." >&2
+			return 0
+		fi
 
-      # Prompt for confirmation unless -y flag was used
-      if [[ "$skip_confirmation" == false ]]; then
-         read -p "Rename '$rename_original' to '$new_filename'? (y/N): " -n 1 -r >&2
-         echo >&2
-         if [[ ! "$REPLY" == [yY] ]]; then
-            echo "Rename cancelled." >&2
-            return 0
-         fi
-      fi
+		# Prompt for confirmation unless -y flag was used
+		if [[ "$skip_confirmation" == false ]]; then
+			read -p "Rename '$rename_original' to '$new_filename'? (y/N): " -n 1 -r >&2
+			echo >&2
+			if [[ ! "$REPLY" == [yY] ]]; then
+				echo "Rename cancelled." >&2
+				return 0
+			fi
+		fi
 
-      # Perform the rename
-      if mv "$rename_original" "$new_filename"; then
-         echo "✓ Renamed to: $new_filename" >&2
-      else
-         echo "❌ Failed to rename file" >&2
-         return 1
-      fi
-   fi
+		# Perform the rename
+		if mv "$rename_original" "$new_filename"; then
+			echo "✓ Renamed to: $new_filename" >&2
+		else
+			echo "❌ Failed to rename file" >&2
+			return 1
+		fi
+	fi
 }
 
 # Handle help and version flags
 if [[ "${1:-}" == "-h" ]] || [[ "${1:-}" == "--help" ]]; then
-   display_help_text_and_die
+	display_help_text_and_die
 fi
 if [[ "${1:-}" == "--version" ]]; then
-   echo "$cmd_base $(cat "$script_dir/VERSION" 2>/dev/null || echo "unknown")"
-   exit 0
+	echo "$cmd_base $(cat "$script_dir/VERSION" 2>/dev/null || echo "unknown")"
+	exit 0
 fi
 
 # Parse command-line arguments
@@ -176,35 +143,35 @@ parse_smart_filename_arguments "$@"
 
 # Validate input: require either file(s) or clipboard
 if [[ "$source" == "STDIN" ]]; then
-   echo "‼️ Error: $cmd_base requires filename(s) or --clipboard option" >&2
-   echo "Usage: $cmd_base [-y] [OPTIONS] FILENAME..." >&2
-   echo "       $cmd_base [OPTIONS] --clipboard" >&2
-   echo "Run '$cmd_base --help' for more information." >&2
-   exit 1
+	echo "‼️ Error: $cmd_base requires filename(s) or --clipboard option" >&2
+	echo "Usage: $cmd_base [-y] [OPTIONS] FILENAME..." >&2
+	echo "       $cmd_base [OPTIONS] --clipboard" >&2
+	echo "Run '$cmd_base --help' for more information." >&2
+	exit 1
 fi
 
 # Override output_result to use our custom handler
 output_result() {
-   smart_filename_output "$1"
+	smart_filename_output "$1"
 }
 
 # Process files
 if [[ "$source" == "FILE" ]]; then
-   # Process each file
-   for file in "${files_to_process[@]}"; do
-      source_identifier="$file"
-      rename_original="$file"
-      
-      # Execute processing and run the active function
-      execute_processing
-      hline "$cmd_base using $active_function"
-      run_ai_function
-      
-      echo "" >&2  # Add blank line between files
-   done
+	# Process each file
+	for file in "${files_to_process[@]}"; do
+		source_identifier="$file"
+		rename_original="$file"
+
+		# Execute processing and run the active function
+		execute_processing
+		hline "$cmd_base using $active_function"
+		run_ai_function
+
+		echo "" >&2 # Add blank line between files
+	done
 else
-   # Process clipboard
-   execute_processing
-   hline "$cmd_base using $active_function"
-   $active_function
+	# Process clipboard
+	execute_processing
+	hline "$cmd_base using $active_function"
+	$active_function
 fi

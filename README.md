@@ -1,4 +1,4 @@
-<!-- Version: 1.0 | Last updated: 2026-03-19 -->
+<!-- Version: 1.1 | Last updated: 2026-07-17 -->
 
 # summarize-text
 
@@ -104,7 +104,7 @@ git clone https://github.com/tigger04/summarize-text.git
 cd summarize-text
 
 make test          # Run regression tests
-make install       # Dev install to /usr/local/bin (requires sudo)
+make install       # Dev symlinks in ~/.local/bin (PREFIX=path overrides it)
 make release       # Tag and release (VERSION=x.y.z optional)
 make sync          # Git add/commit/pull/push
 make help          # Show all targets
@@ -112,4 +112,4 @@ make help          # Show all targets
 
 ## License
 
-MIT License — Copyright (c) Taḋg Paul. See [LICENSE](LICENSE).
+MIT License --- Copyright (c) Taḋg Paul. See [LICENSE](LICENSE).

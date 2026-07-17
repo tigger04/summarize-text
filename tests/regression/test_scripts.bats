@@ -34,7 +34,7 @@ setup() {
 @test "RT-14.1 summarize-text --help exits successfully" {
    run "$PROJECT_ROOT/summarize-text" --help
    [ "$status" -eq 0 ]
-   [[ "$output" =~ "USAGE" ]]
+   [[ "$output" =~ "Usage" ]]
    [[ "$output" =~ "Summarize" ]]
 }
 
@@ -42,7 +42,7 @@ setup() {
 @test "RT-14.2 polish-text --help exits successfully" {
    run "$PROJECT_ROOT/polish-text" --help
    [ "$status" -eq 0 ]
-   [[ "$output" =~ "USAGE" ]]
+   [[ "$output" =~ "Usage" ]]
    [[ "$output" =~ "Polish" ]]
 }
 
@@ -50,8 +50,8 @@ setup() {
 @test "RT-14.3 smart-filename --help exits successfully" {
    run "$PROJECT_ROOT/smart-filename" --help
    [ "$status" -eq 0 ]
-   [[ "$output" =~ "USAGE" ]]
-   [[ "$output" =~ "smart filename" ]]
+   [[ "$output" =~ "Usage" ]]
+   [[ "$output" =~ "Generate descriptive filenames" ]]
 }
 
 # Test that library functions are sourced correctly
@@ -141,7 +141,7 @@ setup() {
    # Test that help works via symlink
    run "$TEMP_DIR/summarize-test-link" --help
    [ "$status" -eq 0 ]
-   [[ "$output" =~ "USAGE" ]]
+   [[ "$output" =~ "Usage" ]]
 
    # Cleanup
    rm -rf "$TEMP_DIR"
@@ -155,7 +155,7 @@ setup() {
    # Test that help works via symlink
    run "$TEMP_DIR/polish-test-link" --help
    [ "$status" -eq 0 ]
-   [[ "$output" =~ "USAGE" ]]
+   [[ "$output" =~ "Usage" ]]
 
    # Cleanup
    rm -rf "$TEMP_DIR"
@@ -169,7 +169,7 @@ setup() {
    # Test that help works via symlink
    run "$TEMP_DIR/smart-test-link" --help
    [ "$status" -eq 0 ]
-   [[ "$output" =~ "USAGE" ]]
+   [[ "$output" =~ "Usage" ]]
 
    # Cleanup
    rm -rf "$TEMP_DIR"

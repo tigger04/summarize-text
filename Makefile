@@ -6,6 +6,10 @@ VERSION := $(shell cat VERSION 2>/dev/null || echo "0.0.0")
 TAP_REPO := tigger04/homebrew-tap
 FORMULA := Formula/summarize-text.rb
 
+PREFIX ?= $(HOME)/.local
+BIN_DIR := $(PREFIX)/bin
+COMMANDS := summarize-text polish-text smart-filename
+
 .PHONY: test test-one-off install uninstall clean help release sync
 
 # Default target
@@ -13,8 +17,8 @@ help:
 	@echo "Available targets:"
 	@echo "  test          - Run regression tests"
 	@echo "  test-one-off  - Run one-off tests (ISSUE=N for specific issue)"
-	@echo "  install       - Development install to /usr/local/bin (requires sudo)"
-	@echo "  uninstall     - Remove installed files (requires sudo)"
+	@echo "  install       - Symlink development commands to $(BIN_DIR)"
+	@echo "  uninstall     - Remove development command symlinks"
 	@echo "  release       - Tag release and update Homebrew formula"
 	@echo "                  VERSION=x.y.z to set specific version"
 	@echo "                  SKIP_TESTS=1 to bypass test step"
@@ -85,22 +89,31 @@ sync:
 	@git pull
 	@git push
 
-# Development install (requires sudo)
-install: summarize-text
-	@echo "Installing to /usr/local/bin (requires sudo)..."
-	@echo "Creating directories..."
-	@sudo install -d /usr/local/bin
-	@sudo install -d /usr/local/share/summarize-text
-	@echo "Installing files..."
-	@sudo install -m 755 summarize-text /usr/local/bin/
-	@sudo install -m 644 summarize-text-lib.sh /usr/local/share/summarize-text/
-	@echo "Installation complete: /usr/local/bin/summarize-text"
+# Development install
+install:
+	@echo "Installing development symlinks to $(BIN_DIR)..."
+	@install -d "$(BIN_DIR)"
+	@for command_name in $(COMMANDS); do \
+		target="$(BIN_DIR)/$$command_name"; \
+		if [ -e "$$target" ] || [ -L "$$target" ]; then \
+			if [ ! -L "$$target" ] || [ "$$(readlink "$$target")" != "$(CURDIR)/$$command_name" ]; then \
+				echo "Refusing to replace existing path: $$target" >&2; \
+			exit 1; \
+			fi; \
+		fi; \
+		ln -sfn "$(CURDIR)/$$command_name" "$$target"; \
+	done
+	@echo "Installation complete: $(BIN_DIR)"
 
-# Uninstall (requires sudo)
+# Development uninstall
 uninstall:
-	@echo "Uninstalling from /usr/local (requires sudo)..."
-	@sudo rm -f /usr/local/bin/summarize-text
-	@sudo rm -rf /usr/local/share/summarize-text
+	@echo "Removing development symlinks from $(BIN_DIR)..."
+	@for command_name in $(COMMANDS); do \
+		target="$(BIN_DIR)/$$command_name"; \
+		if [ -L "$$target" ] && [ "$$(readlink "$$target")" = "$(CURDIR)/$$command_name" ]; then \
+			trash -- "$$target"; \
+		fi; \
+	done
 	@echo "Uninstall complete"
 
 # Build the executable (ensures it exists and is executable)
